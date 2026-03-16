@@ -1,2 +1,2 @@
-# Memory_efficient_Vehicle_classifier
-Memory efficient vehicle classifier using Knowledge distillation
+# Memory_constraint_Vehicle_classifier
+Memory efficient / memory constraint environment vehicle classifier using Knowledge distillation
