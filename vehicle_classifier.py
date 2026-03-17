@@ -45,7 +45,7 @@ class VehicleClassifier:
         self.model = StudentShuffleNet(num_classes=len(CLASS_IDX))
         
         if model_path:
-            # 1. This is the crucial line you were missing! We load the FP16 file into the 'state_dict' variable.
+            # 1. load the FP16 file into the 'state_dict' variable.
             state_dict = torch.load(model_path, map_location=self.device, weights_only=True)
             
             # 2. Briefly convert our blank PyTorch model to FP16 to accept the FP16 weights
