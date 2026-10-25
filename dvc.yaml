@@ -1,6 +1,6 @@
 stages:
   create_data_manifest:
-    cmd: python scripts/create_data_manifest.py --config configs/data.yaml --output data/manifests/data_manifest.json
+    cmd: python -m scripts.create_data_manifest --config configs/data.yaml --output data/manifests/data_manifest.json
     deps:
       - configs/data.yaml
       - scripts/create_data_manifest.py
@@ -18,7 +18,7 @@ stages:
     outs:
       - data/manifests/data_manifest.json
   validate_data:
-    cmd: python scripts/validate_data_manifest.py --manifest data/manifests/data_manifest.json --output reports/data_validation.json
+    cmd: python -m scripts.validate_data_manifest --manifest data/manifests/data_manifest.json --output reports/data_validation.json
     deps:
       - scripts/validate_data_manifest.py
       - vehicle_classifier_core/data_versioning.py

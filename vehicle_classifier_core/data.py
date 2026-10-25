@@ -1,6 +1,8 @@
 """Dataset construction, split generation, and deterministic loaders."""
 
 import logging
+import json
+from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, Subset
 from torchvision.datasets import ImageFolder
@@ -32,6 +34,7 @@ def make_train_validation_loaders(
     num_workers: int = 0,
     augmentation_config: dict | None = None,
     preprocessing_config: dict | None = None,
+    manifest_path=None,
 ):
     if not 0.0 < validation_fraction < 1.0:
         raise ValueError("validation_fraction must be between 0 and 1")
@@ -44,7 +47,26 @@ def make_train_validation_loaders(
     if train_base.samples != validation_base.samples:
         raise ValueError("Training and validation datasets resolved different files or labels")
 
-    validation_indices, train_indices = split_indices(len(train_base), seed, validation_fraction)
+    group_ids = None
+    if manifest_path and Path(manifest_path).is_file():
+        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        manifest_hashes = {
+            row["path"]: row["sha256"]
+            for row in manifest["records"]
+            if row["dataset"] == "training"
+        }
+        group_ids = []
+        for image_path, _ in train_base.samples:
+            relative_path = Path(image_path).relative_to(Path(dataset_dir)).as_posix()
+            try:
+                group_ids.append(manifest_hashes[relative_path])
+            except KeyError as exc:
+                raise ValueError(
+                    f"Training image {relative_path} is missing from manifest {manifest_path}"
+                ) from exc
+    validation_indices, train_indices = split_indices(
+        len(train_base), seed, validation_fraction, group_ids=group_ids
+    )
     train_subset = Subset(train_base, train_indices)
     validation_subset = Subset(validation_base, validation_indices)
     generator = torch.Generator().manual_seed(seed)
@@ -56,7 +78,7 @@ def make_train_validation_loaders(
     )
     logger.info(
         "Prepared deterministic dataset split",
-        extra={"samples": len(indices), "train": len(train_subset), "validation": len(validation_subset), "seed": seed},
+        extra={"samples": len(train_base), "train": len(train_subset), "validation": len(validation_subset), "seed": seed},
     )
     return train_loader, validation_loader
 

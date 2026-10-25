@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "reasons": [],
+  "evaluation": {
+    "mlflow_run_id": "79d2c4b71c5a4358999382aadb89bea7",
+    "git_revision": "0762ae53911e71a0ac2058073522d43f7ff9f225",
+    "source_snapshot_sha256": "8da117380dfa01c973c69a9fe26bc4348aa51f035a5bc058e455dbb24f8bc17b",
+    "data_version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
+    "data_manifest_sha256": "3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
+    "accuracy": 0.9243999719619751
+  },
+  "baseline": {
+    "path": "reports/baseline.json",
+    "fresh_accuracy": 0.9243999719619751
+  },
+  "artifact": {
+    "path": "student_model.pth",
+    "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+    "size_bytes": 2665366,
+    "max_size_bytes_exclusive": 5000000
+  }
+}

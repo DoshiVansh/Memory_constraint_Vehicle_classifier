@@ -14,16 +14,30 @@ CANONICAL_CLASSES = ("Bus", "Truck", "Car", "Bike", "None")
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 
-def split_indices(sample_count: int, seed: int, validation_fraction: float):
-    """Return validation/train indices using the exact training split rule."""
+def split_indices(sample_count: int, seed: int, validation_fraction: float, group_ids=None):
+    """Return deterministic validation/train indices, keeping groups intact."""
     if not 0.0 < validation_fraction < 1.0:
         raise ValueError("validation_fraction must be between 0 and 1")
-    indices = list(range(sample_count))
-    random.Random(seed).shuffle(indices)
-    split = int(sample_count * validation_fraction)
-    if split < 1 or split >= sample_count:
+    target_validation_count = int(sample_count * validation_fraction)
+    if target_validation_count < 1 or target_validation_count >= sample_count:
         raise ValueError("Dataset is too small for the requested validation fraction")
-    return indices[:split], indices[split:]
+    if group_ids is None:
+        group_ids = list(range(sample_count))
+    if len(group_ids) != sample_count:
+        raise ValueError("group_ids must have one entry per sample")
+    groups = {}
+    for index, group_id in enumerate(group_ids):
+        groups.setdefault(group_id, []).append(index)
+    grouped_indices = list(groups.values())
+    random.Random(seed).shuffle(grouped_indices)
+    validation_indices = []
+    train_indices = []
+    for group in grouped_indices:
+        if len(validation_indices) < target_validation_count:
+            validation_indices.extend(group)
+        else:
+            train_indices.extend(group)
+    return sorted(validation_indices), sorted(train_indices)
 
 
 def sha256_file(path: Path) -> str:
@@ -126,7 +140,9 @@ def create_manifest(dataset_specs: dict, *, seed: int, validation_fraction: floa
             "class_counts": dict(sorted(class_counts.items())),
         }
     train_records = [row for row in records if row["dataset"] == "training"]
-    validation_indices, _ = split_indices(len(train_records), seed, validation_fraction)
+    validation_indices, _ = split_indices(
+        len(train_records), seed, validation_fraction, [row["sha256"] for row in train_records]
+    )
     validation_indices = set(validation_indices)
     for index, row in enumerate(train_records):
         row["split"] = "validation" if index in validation_indices else "train"
@@ -135,7 +151,7 @@ def create_manifest(dataset_specs: dict, *, seed: int, validation_fraction: floa
         "schema_version": 1,
         "seed": seed,
         "validation_fraction": validation_fraction,
-        "training_split_rule": "random.Random(seed).shuffle(ImageFolder-ordered sample indices); first floor(N*fraction) are validation",
+        "training_split_rule": "Shuffle exact-SHA256 groups with random.Random(seed); assign whole groups to validation until the target fraction is reached",
         "perceptual_hash": "dhash64-v1",
         "class_mapping": {str(index): name for index, name in enumerate(CANONICAL_CLASSES)},
         "datasets": summaries,
@@ -208,15 +224,15 @@ def validate_manifest(manifest: dict, *, near_duplicate_distance: int = 4) -> di
     for digest, rows in exact.items():
         if len(rows) > 1:
             split_pairs = sorted({row["split"] for row in rows})
-            kind = "duplicate_across_splits" if len(split_pairs) > 1 else "duplicate_files"
-            errors.append(
-                {
-                    "type": kind,
-                    "sha256": digest,
-                    "locations": [f"{row['dataset']}:{row['path']}" for row in rows],
-                    "splits": split_pairs,
-                }
-            )
+            duplicate = {
+                "sha256": digest,
+                "locations": [f"{row['dataset']}:{row['path']}" for row in rows],
+                "splits": split_pairs,
+            }
+            if len(split_pairs) > 1:
+                errors.append({"type": "duplicate_across_splits", **duplicate})
+            else:
+                warnings.append({"type": "duplicate_within_split", **duplicate})
     near_seen = set()
     near_duplicate_count = 0
     max_warning_examples = 250

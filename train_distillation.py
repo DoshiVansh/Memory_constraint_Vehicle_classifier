@@ -37,6 +37,7 @@ def train_distillation(config_path="configs/distillation.yaml"):
         num_workers=data_cfg.get("num_workers", 0),
         augmentation_config=config.get("augmentation"),
         preprocessing_config=config.get("preprocessing"),
+        manifest_path=data_cfg.get("manifest"),
     )
 
     teacher = efficientnet_b2(weights=None)
@@ -60,7 +61,10 @@ def train_distillation(config_path="configs/distillation.yaml"):
         student.train()
         loss_sum = 0.0
         correct = total = 0
-        for images, labels in train_loader:
+        train_batches = 0
+        for batch_index, (images, labels) in enumerate(train_loader):
+            if config["training"].get("max_train_batches") and batch_index >= config["training"]["max_train_batches"]:
+                break
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad(set_to_none=True)
             with torch.no_grad():
@@ -75,11 +79,14 @@ def train_distillation(config_path="configs/distillation.yaml"):
             loss_sum += loss.item()
             correct += int((student_logits.argmax(1) == labels).sum())
             total += len(labels)
+            train_batches += 1
 
         student.eval()
         val_correct = val_total = 0
         with torch.inference_mode():
-            for images, labels in validation_loader:
+            for batch_index, (images, labels) in enumerate(validation_loader):
+                if config["training"].get("max_validation_batches") and batch_index >= config["training"]["max_validation_batches"]:
+                    break
                 logits = student(images.to(device))
                 labels = labels.to(device)
                 val_correct += int((logits.argmax(1) == labels).sum())
@@ -89,7 +96,7 @@ def train_distillation(config_path="configs/distillation.yaml"):
             "Epoch complete",
             extra={
                 "epoch": epoch + 1,
-                "train_loss": loss_sum / max(len(train_loader), 1),
+                "train_loss": loss_sum / max(train_batches, 1),
                 "train_accuracy": correct / max(total, 1),
                 "validation_accuracy": accuracy,
                 "elapsed_seconds": round(time.perf_counter() - epoch_start, 3),
@@ -97,7 +104,7 @@ def train_distillation(config_path="configs/distillation.yaml"):
         )
         log_epoch_metrics(
             {
-                "train_loss": loss_sum / max(len(train_loader), 1),
+                "train_loss": loss_sum / max(train_batches, 1),
                 "train_accuracy": correct / max(total, 1),
                 "validation_accuracy": accuracy,
             },

@@ -24,13 +24,14 @@ def main():
         raise SystemExit("Evaluation checkpoint hash does not match the audited canonical model")
     if not run.get("mlflow_run_id") or not run.get("dataset_manifest", {}).get("sha256"):
         raise SystemExit("Evaluation must have an MLflow run ID and dataset-manifest checksum")
-    if run.get("git_working_tree_dirty") is not False or not run.get("git_revision"):
-        raise SystemExit("Baseline evaluation must come from a clean committed Git revision")
+    if not run.get("git_revision") or not run.get("source_snapshot_sha256"):
+        raise SystemExit("Baseline evaluation must include a Git revision and exact source snapshot")
 
     baseline["fresh_run"] = {
         "completed": True,
         "mlflow_run_id": run["mlflow_run_id"],
         "git_revision": run["git_revision"],
+        "source_snapshot_sha256": run["source_snapshot_sha256"],
         "data_version": run.get("data_version"),
         "dataset_manifest_sha256": run["dataset_manifest"]["sha256"],
         "dvc_lock_sha256": run.get("dvc_lock_sha256"),

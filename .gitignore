@@ -225,6 +225,7 @@ __marimo__/
 /data/manifests/
 /models/
 /mlartifacts/
+/mlruns/
 /mlflow.db
 /mlflow.db-shm
 /mlflow.db-wal
@@ -245,3 +246,7 @@ __marimo__/
 model_test_log.txt
 mio_tcd_evaluation_log.txt
 reports/*_run.json
+/reports/phase3_smoke_*.json
+/vehicle_dataset
+/test_dataset
+/test_MIO_TCD_data

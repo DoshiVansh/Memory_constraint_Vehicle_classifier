@@ -1,75 +1,175 @@
 {
-  "schema_version": "0.1",
-  "status": "audit_only_fresh_run_pending",
-  "audit_date": "2026-10-25",
-  "repository": {
-    "git_commit": "732d1eeaadcd908e311f081d70a53bc606b5d042",
-    "working_tree_note": "Checkpoint and dataset assets are present locally and are not tracked in Git."
+  "audit_date": "2026-10-26",
+  "dataset": {
+    "class_counts": {
+      "Bike": 500,
+      "Bus": 500,
+      "Car": 500,
+      "None": 500,
+      "Truck": 500
+    },
+    "fingerprint": "34ce9044e7b87f67c45208254470486e59680518e0f2bfd0c787876e1d20c4ac",
+    "fingerprint_method": "sha256 of sorted per-file sha256sum output bytes",
+    "path": "test_dataset",
+    "provenance": "unverified",
+    "sample_count": 2500,
+    "version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a"
+  },
+  "fresh_run": {
+    "checkpoint_sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+    "completed": true,
+    "confusion_matrix": [
+      [
+        454,
+        21,
+        13,
+        1,
+        11
+      ],
+      [
+        1,
+        463,
+        14,
+        4,
+        18
+      ],
+      [
+        12,
+        18,
+        439,
+        13,
+        18
+      ],
+      [
+        1,
+        6,
+        4,
+        480,
+        9
+      ],
+      [
+        1,
+        9,
+        5,
+        10,
+        475
+      ]
+    ],
+    "data_version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
+    "dataset_manifest_sha256": "3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
+    "dvc_lock_sha256": "08934eb4de1b08bdb599f63c4cd273e882d3eeaa3b622057ac92fb9606f2c410",
+    "git_revision": "0762ae53911e71a0ac2058073522d43f7ff9f225",
+    "mean_latency_ms": 9.554056050399959,
+    "mlflow_run_id": "781f1ac701484fecaffee90434b447f4",
+    "overall_accuracy": 0.9243999719619751,
+    "per_class": {
+      "0": {
+        "accuracy": 0.9079999923706055,
+        "correct": 454,
+        "support": 500
+      },
+      "1": {
+        "accuracy": 0.9259999990463257,
+        "correct": 463,
+        "support": 500
+      },
+      "2": {
+        "accuracy": 0.878000020980835,
+        "correct": 439,
+        "support": 500
+      },
+      "3": {
+        "accuracy": 0.9599999785423279,
+        "correct": 480,
+        "support": 500
+      },
+      "4": {
+        "accuracy": 0.949999988079071,
+        "correct": 475,
+        "support": 500
+      }
+    },
+    "sample_count": 2500,
+    "source_snapshot_sha256": "d8fe036ddd15950b26700e0c8485a57b327902c05935fb15d21f196036f27385"
+  },
+  "historical_reference": {
+    "accuracy": 0.9244,
+    "augmented_accuracy": 0.876,
+    "checkpoint_filename_in_log": "shuffleNet_v2_model.pth",
+    "checkpoint_sha256_matches_selected_checkpoint": true,
+    "clean_accuracy": 0.9728,
+    "confusion_matrix": null,
+    "cpu_latency_ms": null,
+    "dataset_fingerprint_matches_current_tree": null,
+    "is_fresh_baseline": false,
+    "per_class": {
+      "Bike": {
+        "accuracy": 0.96,
+        "correct": 480,
+        "support": 500
+      },
+      "Bus": {
+        "accuracy": 0.908,
+        "correct": 454,
+        "support": 500
+      },
+      "Car": {
+        "accuracy": 0.878,
+        "correct": 439,
+        "support": 500
+      },
+      "None": {
+        "accuracy": 0.95,
+        "correct": 475,
+        "support": 500
+      },
+      "Truck": {
+        "accuracy": 0.926,
+        "correct": 463,
+        "support": 500
+      }
+    },
+    "sample_count": 2500,
+    "source": "model_test_log.txt, 2026-03-16 14:25:58 entry"
   },
   "model": {
     "architecture": "torchvision.models.shufflenet_v2_x1_0",
     "checkpoint": "student_model.pth",
-    "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
-    "size_bytes": 2665366,
-    "size_mib": 2.54,
-    "max_size_bytes": 5000000,
     "class_mapping": {
       "0": "Bus",
       "1": "Truck",
       "2": "Car",
       "3": "Bike",
       "4": "None"
-    }
-  },
-  "dataset": {
-    "path": "test_dataset",
-    "version": null,
-    "provenance": "unverified",
-    "sample_count": 2500,
-    "class_counts": {
-      "Bus": 500,
-      "Truck": 500,
-      "Car": 500,
-      "Bike": 500,
-      "None": 500
     },
-    "fingerprint_method": "sha256 of sorted per-file sha256sum output bytes",
-    "fingerprint": "34ce9044e7b87f67c45208254470486e59680518e0f2bfd0c787876e1d20c4ac"
+    "max_size_bytes": 5000000,
+    "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+    "size_bytes": 2665366,
+    "size_mib": 2.54
   },
   "preprocessing": {
     "color": "RGB",
-    "resize": [224, 224],
     "interpolation": "torchvision Resize default",
-    "to_tensor": true,
-    "normalize_mean": [0.485, 0.456, 0.406],
-    "normalize_std": [0.229, 0.224, 0.225]
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "resize": [
+      224,
+      224
+    ],
+    "to_tensor": true
   },
-  "fresh_run": {
-    "completed": false,
-    "reason": "PyTorch is not installed in the available Python environment.",
-    "overall_accuracy": null,
-    "per_class": null,
-    "confusion_matrix": null,
-    "cpu_latency_ms": null
+  "repository": {
+    "git_commit": "732d1eeaadcd908e311f081d70a53bc606b5d042",
+    "working_tree_note": "Fresh run recorded with Git SHA plus an MLflow-archived source snapshot fingerprint; local data and MLflow stores remain outside Git."
   },
-  "historical_reference": {
-    "source": "model_test_log.txt, 2026-03-16 14:25:58 entry",
-    "checkpoint_filename_in_log": "shuffleNet_v2_model.pth",
-    "checkpoint_sha256_matches_selected_checkpoint": true,
-    "dataset_fingerprint_matches_current_tree": null,
-    "sample_count": 2500,
-    "accuracy": 0.9244,
-    "clean_accuracy": 0.9728,
-    "augmented_accuracy": 0.876,
-    "per_class": {
-      "Bus": {"correct": 454, "support": 500, "accuracy": 0.908},
-      "Truck": {"correct": 463, "support": 500, "accuracy": 0.926},
-      "Car": {"correct": 439, "support": 500, "accuracy": 0.878},
-      "Bike": {"correct": 480, "support": 500, "accuracy": 0.96},
-      "None": {"correct": 475, "support": 500, "accuracy": 0.95}
-    },
-    "confusion_matrix": null,
-    "cpu_latency_ms": null,
-    "is_fresh_baseline": false
-  }
+  "schema_version": "0.1",
+  "status": "fresh_run_recorded_provenance_and_team_ratification_pending"
 }

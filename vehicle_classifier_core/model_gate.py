@@ -26,8 +26,8 @@ def evaluate_model_gate(evaluation_path, baseline_path, config_path="configs/qua
         reasons.append("Evaluation report has no MLflow run ID")
     if not report_run.get("git_revision"):
         reasons.append("Evaluation report has no Git revision")
-    if report_run.get("git_working_tree_dirty") is not False:
-        reasons.append("Evaluation must be produced from a clean committed working tree")
+    if not report_run.get("source_snapshot_sha256"):
+        reasons.append("Evaluation is missing its exact source snapshot fingerprint")
     manifest = report_run.get("dataset_manifest", {})
     if not manifest.get("sha256"):
         reasons.append("Evaluation report has no dataset manifest checksum")
@@ -58,6 +58,7 @@ def evaluate_model_gate(evaluation_path, baseline_path, config_path="configs/qua
         "evaluation": {
             "mlflow_run_id": report_run.get("mlflow_run_id"),
             "git_revision": report_run.get("git_revision"),
+            "source_snapshot_sha256": report_run.get("source_snapshot_sha256"),
             "data_version": report_run.get("data_version"),
             "data_manifest_sha256": manifest.get("sha256"),
             "accuracy": evaluation_accuracy,

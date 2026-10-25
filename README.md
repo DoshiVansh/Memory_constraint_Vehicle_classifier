@@ -48,8 +48,9 @@ test -f .env || cp .env.example .env
 # Start the local DVC object store.
 scripts/configure_dvc_remote.sh --start-local-storage
 
-# Open http://127.0.0.1:9001, sign in with .env credentials, create the
-# vehicle-classifier-data bucket, then configure DVC and add the existing data:
+# Create the bucket from the ignored .env credentials, then configure DVC and
+# add the existing data. The RustFS console is available at http://127.0.0.1:9001.
+python scripts/ensure_dvc_bucket.py
 scripts/configure_dvc_remote.sh --track-local-data
 
 # Build the manifest, validate, and upload to RustFS without training.
@@ -111,6 +112,17 @@ log overall, clean/augmented and per-class metrics, confusion matrix, report,
 and exact evaluated checkpoint. If no DVC manifest/lock is available, the run
 is explicitly tagged `unversioned-local-data`; that run cannot pass promotion.
 
+For a quick tracking demonstration on CPU, these two one-batch distillation
+configs create two distinct runs without retraining the full model:
+
+```bash
+python train_distillation.py --config configs/experiments/phase3_smoke_a.yaml
+python train_distillation.py --config configs/experiments/phase3_smoke_b.yaml
+```
+
+They differ in learning rate and distillation weight. Their metrics are only
+smoke-run comparisons and must not be used for quality claims or promotion.
+
 After committing the implementation and obtaining a fresh evaluation of the
 audited canonical checkpoint on the same data manifest, record the baseline
 with explicit confirmation, then use the candidate flow:
@@ -122,13 +134,14 @@ python scripts/record_baseline.py --evaluation reports/evaluation.json --confirm
 python scripts/model_gate.py --evaluation reports/evaluation.json
 python scripts/register_candidate.py --evaluation reports/evaluation.json
 # Review the candidate and its quality-gate report in MLflow, then explicitly approve:
-python scripts/promote_model.py --model-name VehicleClassifier --version 1 --approve
+python scripts/promote_model.py --model-name VehicleClassifier --version 2 --approve
 ```
 
-The baseline recorder checks that the evaluated checkpoint hash matches the
-audited canonical checkpoint and requires a clean committed working tree. The
-candidate gate requires its own clean Git revision, MLflow run ID, the same
-dataset-manifest checksum as the baseline, matching checkpoint SHA-256,
+Replace `2` with the candidate version number printed by the registration
+command. The baseline recorder checks that the evaluated checkpoint hash matches the
+audited canonical checkpoint and records the run's Git SHA plus an archived
+source snapshot fingerprint. The candidate gate requires its own Git revision
+and source snapshot, MLflow run ID, the same dataset-manifest checksum as the baseline, matching checkpoint SHA-256,
 accuracy at least equal to the fresh canonical baseline, and a checkpoint
 strictly below 5,000,000 bytes. The
 historical 92.44% in the current baseline audit is not treated as a fresh gate
@@ -156,9 +169,12 @@ The complete ML pipeline (which trains the teacher and student) can be run with
 `dvc repro evaluate_target evaluate_ood` when the Phase 2 data and teacher
 pretraining weights are available; this may take substantial time.
 The MLflow database/artifacts remain local side effects and are not DVC outputs.
-The current DVC remote is not yet initialized or populated, and the canonical
-baseline has not yet been freshly reproduced, so the promotion flow will remain
-blocked until those inputs exist. See [phase status](docs/phase_status.md).
+The local DVC remote is initialized and populated, and the fresh canonical
+baseline and candidate quality gate are recorded. Model version 2 is a
+gate-passing candidate; assigning the `champion` alias still requires explicit
+approval. The full teacher/student training stages have not been run end to end
+because they are long on the available CPU-only runtime. See
+[phase status](docs/phase_status.md).
 
 `vehicle_dataset`, `test_dataset`, and `test_MIO_TCD_data` are stored in DVC, not Git. The raw `imagenet_raw/` and `mio_tcd_raw/` directories stay local until their redistribution rights are verified. RustFS stores data on the host disk and has no cloud fee; its single-node mode has no redundancy, so keep a backup. It binds to localhost by default. Sharing across computers requires binding to a trusted LAN, setting each client's `DVC_ENDPOINT_URL` to the host address, and keeping RustFS running. Do not expose this development endpoint to the public internet. Keep `.obsidian/` and `.env` private; both are ignored by Git.
 

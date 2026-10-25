@@ -22,10 +22,27 @@ Current training counts are not uniform: Bus 4,000; Truck 3,811; Car 4,000; Bike
 
 ## Rebuild and validate
 
-After configuring the DVC remote and tracking the three curated directories:
+After installing the project dependencies, ensure the datasets have been
+retrieved with `dvc pull`, then rebuild only the Phase 2 data manifest/report:
 
 ```bash
-dvc repro
+dvc repro validate_data
 ```
 
-The pipeline creates `data/manifests/data_manifest.json` and `reports/data_validation.json`. Evaluators include the manifest's SHA-256 in their output to identify the exact data contents.
+The full pipeline command (`dvc repro evaluate_target evaluate_ood`) also runs
+teacher and student training and can take substantial time. The current data
+manifest contains 24,690 image records and is built from the files materialized
+by DVC.
+
+Latest local validation: `review_warnings`, zero errors. Exact duplicates were
+kept within the same split group so they do not cross train/validation/test
+boundaries. The report includes 41 exact same-split duplicate groups and 209
+near-duplicate examples for review (the near-duplicate scan is capped). These
+are visible in `reports/data_validation.json`; they have not been silently
+removed from the user's dataset. Provenance and the OOD `None` ontology
+limitation above remain unresolved.
+
+Evaluators include the manifest's SHA-256 in their output to identify the exact
+data contents. The DVC data pointers and manifest cache have been pushed to
+the local RustFS remote. A temporary clean checkout successfully retrieved all
+three datasets and rebuilt the identical manifest SHA-256 and validation report.

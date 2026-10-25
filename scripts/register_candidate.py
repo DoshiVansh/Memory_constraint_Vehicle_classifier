@@ -35,6 +35,7 @@ def main():
     client.set_model_version_tag(args.model_name, version.version, "approval_status", "candidate")
     client.set_model_version_tag(args.model_name, version.version, "quality_gate", "passed")
     client.set_model_version_tag(args.model_name, version.version, "git_sha", gate["evaluation"]["git_revision"])
+    client.set_model_version_tag(args.model_name, version.version, "source_snapshot_sha256", gate["evaluation"]["source_snapshot_sha256"])
     client.set_model_version_tag(args.model_name, version.version, "data_version", gate["evaluation"]["data_version"] or "unknown")
     client.set_model_version_tag(args.model_name, version.version, "artifact_sha256", gate["artifact"]["sha256"])
     client.log_artifact(run_id, "reports/model_gate.json", artifact_path="quality_gate")

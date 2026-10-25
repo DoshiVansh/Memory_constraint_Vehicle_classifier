@@ -1,7 +1,6 @@
 [core]
-	remote = storage
-	analytics = false
-
+    remote = storage
+    analytics = false
 ['remote "storage"']
-	url = s3://vehicle-classifier-data/dvc
-	region = us-east-1
+    url = s3://vehicle-classifier-data/dvc
+    region = us-east-1

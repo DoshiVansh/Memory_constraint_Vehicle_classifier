@@ -33,6 +33,7 @@ def train_teacher(config_path="configs/teacher.yaml"):
         num_workers=data_cfg.get("num_workers", 0),
         augmentation_config=config.get("augmentation"),
         preprocessing_config=config.get("preprocessing"),
+        manifest_path=data_cfg.get("manifest"),
     )
     weights = EfficientNet_B2_Weights.DEFAULT if train_cfg.get("use_imagenet_pretrained") else None
     model = efficientnet_b2(weights=weights)
@@ -48,20 +49,30 @@ def train_teacher(config_path="configs/teacher.yaml"):
         model.train()
         optimizer.zero_grad(set_to_none=True)
         train_loss = 0.0
+        train_batches = 0
         for index, (images, labels) in enumerate(train_loader):
+            if train_cfg.get("max_train_batches") and index >= train_cfg["max_train_batches"]:
+                break
             logits = model(images.to(device))
             labels = labels.to(device)
             loss = criterion(logits, labels)
             (loss / accumulation).backward()
-            if (index + 1) % accumulation == 0 or index + 1 == len(train_loader):
+            if (
+                (index + 1) % accumulation == 0
+                or index + 1 == len(train_loader)
+                or (train_cfg.get("max_train_batches") and index + 1 == train_cfg["max_train_batches"])
+            ):
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
             train_loss += float(loss.detach())
+            train_batches += 1
 
         model.eval()
         correct = total = 0
         with torch.inference_mode():
-            for images, labels in validation_loader:
+            for index, (images, labels) in enumerate(validation_loader):
+                if train_cfg.get("max_validation_batches") and index >= train_cfg["max_validation_batches"]:
+                    break
                 logits = model(images.to(device))
                 labels = labels.to(device)
                 correct += int((logits.argmax(1) == labels).sum())
@@ -69,10 +80,10 @@ def train_teacher(config_path="configs/teacher.yaml"):
         accuracy = correct / total if total else 0.0
         logger.info(
             "Teacher epoch complete",
-            extra={"epoch": epoch + 1, "mean_train_loss": train_loss / max(len(train_loader), 1), "validation_accuracy": accuracy},
+            extra={"epoch": epoch + 1, "mean_train_loss": train_loss / max(train_batches, 1), "validation_accuracy": accuracy},
         )
         log_epoch_metrics(
-            {"train_loss": train_loss / max(len(train_loader), 1), "validation_accuracy": accuracy},
+            {"train_loss": train_loss / max(train_batches, 1), "validation_accuracy": accuracy},
             epoch + 1,
         )
         if accuracy > best_accuracy:
