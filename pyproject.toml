@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools==75.8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vehicle-classifier"
+version = "0.1.0"
+description = "Memory-constrained five-class vehicle image classifier"
+requires-python = ">=3.10"
+dependencies = [
+  "torch==2.6.0",
+  "torchvision==0.21.0",
+  "Pillow==11.1.0",
+  "PyYAML==6.0.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.5"]
+data = ["dvc[s3]==3.67.1"]
+tracking = ["mlflow==3.16.1"]
+
+[tool.setuptools]
+packages = ["vehicle_classifier_core"]
+py-modules = ["vehicle_classifier"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

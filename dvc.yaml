@@ -1,0 +1,108 @@
+stages:
+  create_data_manifest:
+    cmd: python scripts/create_data_manifest.py --config configs/data.yaml --output data/manifests/data_manifest.json
+    deps:
+      - configs/data.yaml
+      - scripts/create_data_manifest.py
+      - vehicle_classifier_core/config.py
+      - vehicle_classifier_core/data.py
+      - vehicle_classifier_core/data_versioning.py
+      - vehicle_dataset
+      - test_dataset
+      - test_MIO_TCD_data
+    params:
+      - configs/data.yaml:
+          - seed
+          - validation_fraction
+          - datasets
+    outs:
+      - data/manifests/data_manifest.json
+  validate_data:
+    cmd: python scripts/validate_data_manifest.py --manifest data/manifests/data_manifest.json --output reports/data_validation.json
+    deps:
+      - scripts/validate_data_manifest.py
+      - vehicle_classifier_core/data_versioning.py
+      - data/manifests/data_manifest.json
+    params:
+      - configs/data.yaml:
+          - seed
+    metrics:
+      - reports/data_validation.json:
+          cache: false
+  train_teacher:
+    cmd: python train_teacher.py --config configs/teacher.yaml
+    deps:
+      - configs/teacher.yaml
+      - train_teacher.py
+      - vehicle_classifier_core/config.py
+      - vehicle_classifier_core/data.py
+      - vehicle_classifier_core/model.py
+      - vehicle_classifier_core/reproducibility.py
+      - vehicle_classifier_core/tracking.py
+      - data/manifests/data_manifest.json
+      - reports/data_validation.json
+      - vehicle_dataset
+    outs:
+      - EfficientNet_B2_teacher_model.pth
+      - reports/teacher_run.json
+  train_student:
+    cmd: python train_distillation.py --config configs/distillation.yaml
+    deps:
+      - configs/distillation.yaml
+      - train_distillation.py
+      - vehicle_classifier_core/config.py
+      - vehicle_classifier_core/data.py
+      - vehicle_classifier_core/model.py
+      - vehicle_classifier_core/packaging.py
+      - vehicle_classifier_core/preprocessing.py
+      - vehicle_classifier_core/reproducibility.py
+      - vehicle_classifier_core/tracking.py
+      - EfficientNet_B2_teacher_model.pth
+      - data/manifests/data_manifest.json
+      - reports/data_validation.json
+      - vehicle_dataset
+    outs:
+      - student_model.pth
+      - student_model.pth.json
+      - reports/distillation_run.json
+  evaluate_target:
+    cmd: python evaluate_test_set.py --config configs/evaluation.yaml
+    deps:
+      - configs/evaluation.yaml
+      - evaluate_test_set.py
+      - requirements-mlflow-model.txt
+      - vehicle_classifier_core/evaluation.py
+      - vehicle_classifier_core/config.py
+      - vehicle_classifier_core/mlflow_model.py
+      - vehicle_classifier_core/model.py
+      - vehicle_classifier_core/preprocessing.py
+      - vehicle_classifier_core/predictor.py
+      - vehicle_classifier_core/reproducibility.py
+      - vehicle_classifier_core/tracking.py
+      - student_model.pth
+      - data/manifests/data_manifest.json
+      - test_dataset
+    metrics:
+      - reports/evaluation.json:
+          cache: false
+  evaluate_ood:
+    cmd: python evaluate_mio_tcd.py --config configs/ood_evaluation.yaml
+    deps:
+      - configs/ood_evaluation.yaml
+      - evaluate_mio_tcd.py
+      - evaluate_test_set.py
+      - requirements-mlflow-model.txt
+      - vehicle_classifier_core/evaluation.py
+      - vehicle_classifier_core/config.py
+      - vehicle_classifier_core/mlflow_model.py
+      - vehicle_classifier_core/model.py
+      - vehicle_classifier_core/preprocessing.py
+      - vehicle_classifier_core/predictor.py
+      - vehicle_classifier_core/reproducibility.py
+      - vehicle_classifier_core/tracking.py
+      - student_model.pth
+      - data/manifests/data_manifest.json
+      - test_MIO_TCD_data
+    metrics:
+      - reports/ood_evaluation.json:
+          cache: false

@@ -205,3 +205,43 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Obsidian vault: keep personal notes, workspace state, and plugin config local.
+.obsidian/
+
+# DVC local state and credentials. Track .dvc/config, never local credentials.
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+
+# Dataset workspaces and downloaded source data are versioned through DVC.
+/imagenet_raw/
+/mio_tcd_raw/
+/vehicle_dataset/
+/test_dataset/
+/test_MIO_TCD_data/
+/data/raw/
+/data/processed/
+/data/manifests/
+/models/
+/mlartifacts/
+/mlflow.db
+/mlflow.db-shm
+/mlflow.db-wal
+
+# Generated checkpoints and local training artifacts. Already tracked files remain tracked.
+/Baseline_model.pth
+/EfficientNet_B2_teacher_model.pth
+/Squeezenet_model.pth
+/shuffleNet_v2_0.5_model.pth
+/shuffleNet_v2_model.pth
+/squeezeNet1.0_model.pth
+/teacher_model.pth
+/student_model.pth
+*.pth.json
+
+# Local logs and run outputs.
+*.log
+model_test_log.txt
+mio_tcd_evaluation_log.txt
+reports/*_run.json

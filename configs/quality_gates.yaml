@@ -1,0 +1,5 @@
+# Promotion compares candidates against reports/baseline.json only after a fresh
+# canonical evaluation has been written to its fresh_run section.
+baseline: reports/baseline.json
+max_artifact_size_bytes: 5000000
+minimum_accuracy_delta: 0.0

@@ -1,0 +1,126 @@
+2026-03-14 18:35:57 | --- Hyperparameters ---
+2026-03-14 18:35:57 | Model: ResNet-50 (Pre-trained)
+2026-03-14 18:35:57 | Batch Size: 32
+2026-03-14 18:35:57 | Epochs: 8
+2026-03-14 18:35:57 | Learning Rate: 0.0001
+2026-03-14 18:35:57 | Validation Split: 0.2
+2026-03-14 18:35:57 | -----------------------
+2026-03-14 18:35:57 | Total images: 13956
+2026-03-14 18:35:57 | Training on 11165 images, Validating on 2791 images.
+
+2026-03-14 18:35:57 | Loading Pre-trained ResNet-50...
+2026-03-14 18:37:09 | Epoch 1: Validation Accuracy improved from 0.00% to 94.02%. Saving Teacher model!
+2026-03-14 18:38:22 | Epoch 2: Validation Accuracy improved from 94.02% to 94.70%. Saving Teacher model!
+2026-03-14 18:39:34 | Epoch 3 | Time: 72.2s | Train Acc: 94.08% | Val Acc: 94.41%
+2026-03-14 18:40:46 | Epoch 4 | Time: 72.3s | Train Acc: 94.98% | Val Acc: 94.16%
+2026-03-14 18:41:59 | Epoch 5: Validation Accuracy improved from 94.70% to 94.73%. Saving Teacher model!
+2026-03-14 18:43:11 | Epoch 6 | Time: 72.4s | Train Acc: 96.05% | Val Acc: 94.45%
+2026-03-14 18:44:23 | Epoch 7: Validation Accuracy improved from 94.73% to 94.91%. Saving Teacher model!
+2026-03-14 18:45:36 | Epoch 8 | Time: 72.4s | Train Acc: 97.10% | Val Acc: 94.41%
+2026-03-14 18:45:36 | 
+Teacher Training Complete. Best Validation Accuracy: 94.91%
+2026-03-14 18:45:36 | The powerful teacher weights are saved as 'teacher_model.pth'.
+
+
+2026-03-14 19:39:44 | Training Upgraded Teacher on device: cuda
+2026-03-14 19:39:44 | --- Hyperparameters ---
+2026-03-14 19:39:44 | Model: EfficientNet-B2 (Pre-trained)
+2026-03-14 19:39:44 | Resolution: 224x224
+2026-03-14 19:39:44 | Batch Size: 32
+2026-03-14 19:39:44 | Epochs: 10
+2026-03-14 19:39:44 | Learning Rate: 0.0001
+2026-03-14 19:39:44 | -----------------------
+2026-03-14 19:39:44 | Total images: 13956
+2026-03-14 19:39:44 | Training on 11165 images, Validating on 2791 images.
+
+2026-03-14 19:39:44 | Loading Pre-trained EfficientNet-B2...
+2026-03-14 19:40:22 | Training Upgraded Teacher on device: cuda
+2026-03-14 19:40:22 | --- Hyperparameters ---
+2026-03-14 19:40:22 | Model: EfficientNet-B2 (Pre-trained)
+2026-03-14 19:40:22 | Resolution: 224x224
+2026-03-14 19:40:22 | Batch Size: 32
+2026-03-14 19:40:22 | Epochs: 10
+2026-03-14 19:40:22 | Learning Rate: 0.0001
+2026-03-14 19:40:22 | -----------------------
+2026-03-14 19:40:22 | Total images: 13956
+2026-03-14 19:40:22 | Training on 11165 images, Validating on 2791 images.
+
+2026-03-14 19:40:22 | Loading Pre-trained EfficientNet-B2...
+2026-03-14 19:43:24 | Training Upgraded Teacher on device: cuda
+2026-03-14 19:43:24 | --- Hyperparameters ---
+2026-03-14 19:43:24 | Model: EfficientNet-B2 (Pre-trained)
+2026-03-14 19:43:24 | Resolution: 224x224
+2026-03-14 19:43:24 | Batch Size: 16
+2026-03-14 19:43:24 | Epochs: 10
+2026-03-14 19:43:24 | Learning Rate: 0.0001
+2026-03-14 19:43:24 | -----------------------
+2026-03-14 19:43:24 | Total images: 13956
+2026-03-14 19:43:24 | Training on 11165 images, Validating on 2791 images.
+
+2026-03-14 19:43:24 | Loading Pre-trained EfficientNet-B2...
+2026-03-14 19:45:50 |  Epoch 1: Val Acc improved from 0.00% to 95.23%. Saving Teacher!
+2026-03-14 19:48:17 |  Epoch 2: Val Acc improved from 95.23% to 96.13%. Saving Teacher!
+2026-03-14 19:50:44 |  Epoch 3: Val Acc improved from 96.13% to 96.56%. Saving Teacher!
+2026-03-14 19:53:12 | Epoch 4 | Time: 147.5s | Train Loss: 0.1297 | Train Acc: 95.78% | Val Acc: 96.45%
+2026-03-14 19:55:39 | Epoch 5 | Time: 147.4s | Train Loss: 0.1057 | Train Acc: 96.44% | Val Acc: 96.35%
+2026-03-14 19:58:07 | Epoch 6 | Time: 147.4s | Train Loss: 0.0912 | Train Acc: 96.92% | Val Acc: 96.24%
+2026-03-14 20:00:34 | Epoch 7 | Time: 147.5s | Train Loss: 0.0761 | Train Acc: 97.47% | Val Acc: 96.45%
+2026-03-14 20:03:02 | Epoch 8 | Time: 147.5s | Train Loss: 0.0637 | Train Acc: 97.89% | Val Acc: 96.13%
+2026-03-14 20:05:29 | Epoch 9 | Time: 147.3s | Train Loss: 0.0561 | Train Acc: 98.15% | Val Acc: 96.17%
+2026-03-14 20:07:56 | Epoch 10 | Time: 147.4s | Train Loss: 0.0561 | Train Acc: 98.32% | Val Acc: 96.17%
+2026-03-14 20:07:56 | 
+Teacher Training Complete. Best Validation Accuracy: 96.56%
+2026-03-14 20:07:56 | The upgraded teacher weights are saved as EfficientNet_B2_teacher_model.pth.
+2026-03-14 23:23:33 | Training Upgraded Teacher on device: cuda
+2026-03-14 23:23:33 | --- Hyperparameters ---
+2026-03-14 23:23:33 | Model: EfficientNet-B2 (Pre-trained)
+2026-03-14 23:23:33 | Resolution: 224x224
+2026-03-14 23:23:33 | Batch Size: 16
+2026-03-14 23:23:33 | Epochs: 10
+2026-03-14 23:23:33 | Learning Rate: 0.0001
+2026-03-14 23:23:33 | -----------------------
+2026-03-14 23:23:33 | Total images: 14370
+2026-03-14 23:23:33 | Training on 11496 images, Validating on 2874 images.
+
+2026-03-14 23:23:33 | Loading Pre-trained EfficientNet-B2...
+2026-03-14 23:26:04 |  Epoch 1: Val Acc improved from 0.00% to 96.21%. Saving Teacher!
+2026-03-14 23:28:35 |  Epoch 2: Val Acc improved from 96.21% to 96.28%. Saving Teacher!
+2026-03-14 23:31:07 |  Epoch 3: Val Acc improved from 96.28% to 97.01%. Saving Teacher!
+2026-03-14 23:33:39 |  Epoch 4: Val Acc improved from 97.01% to 97.53%. Saving Teacher!
+2026-03-14 23:36:10 | Epoch 5 | Time: 151.6s | Train Loss: 0.0967 | Train Acc: 96.69% | Val Acc: 97.15%
+2026-03-14 23:38:42 | Epoch 6 | Time: 151.8s | Train Loss: 0.0817 | Train Acc: 97.31% | Val Acc: 97.32%
+2026-03-14 23:41:14 | Epoch 7 | Time: 151.8s | Train Loss: 0.0723 | Train Acc: 97.60% | Val Acc: 96.73%
+2026-03-14 23:43:46 | Epoch 8 | Time: 151.6s | Train Loss: 0.0563 | Train Acc: 98.12% | Val Acc: 97.01%
+2026-03-14 23:46:17 | Epoch 9 | Time: 151.7s | Train Loss: 0.0488 | Train Acc: 98.51% | Val Acc: 96.87%
+2026-03-14 23:48:49 | Epoch 10 | Time: 151.8s | Train Loss: 0.0533 | Train Acc: 98.20% | Val Acc: 96.52%
+2026-03-14 23:48:49 | 
+Teacher Training Complete. Best Validation Accuracy: 97.53%
+2026-03-14 23:48:49 | The upgraded teacher weights are saved as EfficientNet_B2_teacher_model.pth.
+
+
+
+2026-03-16 13:21:40 | Training Upgraded Teacher on device: cuda
+2026-03-16 13:21:40 | --- Hyperparameters ---
+2026-03-16 13:21:40 | Model: EfficientNet-B2 (Pre-trained)
+2026-03-16 13:21:40 | Resolution: 224x224
+2026-03-16 13:21:40 | Batch Size: 16
+2026-03-16 13:21:40 | Epochs: 10
+2026-03-16 13:21:40 | Learning Rate: 0.0001
+2026-03-16 13:21:40 | -----------------------
+2026-03-16 13:21:40 | Total images: 19690
+2026-03-16 13:21:40 | Training on 15752 images, Validating on 3938 images.
+
+2026-03-16 13:21:40 | Loading Pre-trained EfficientNet-B2...
+2026-03-16 13:25:07 |  Epoch 1: Val Acc improved from 0.00% to 96.37%. Saving Teacher!
+2026-03-16 13:28:35 | Epoch 2 | Time: 208.0s | Train Loss: 0.1812 | Train Acc: 94.06% | Val Acc: 95.96%
+2026-03-16 13:32:03 |  Epoch 3: Val Acc improved from 96.37% to 96.47%. Saving Teacher!
+2026-03-16 13:35:32 |  Epoch 4: Val Acc improved from 96.47% to 96.80%. Saving Teacher!
+2026-03-16 13:39:00 |  Epoch 5: Val Acc improved from 96.80% to 97.28%. Saving Teacher!
+2026-03-16 13:42:29 | Epoch 6 | Time: 208.6s | Train Loss: 0.0759 | Train Acc: 97.46% | Val Acc: 96.72%
+2026-03-16 13:45:57 | Epoch 7 | Time: 208.3s | Train Loss: 0.0602 | Train Acc: 98.03% | Val Acc: 96.98%
+2026-03-16 13:49:26 | Epoch 8 | Time: 208.3s | Train Loss: 0.0565 | Train Acc: 98.23% | Val Acc: 96.93%
+2026-03-16 13:52:54 | Epoch 9 | Time: 208.6s | Train Loss: 0.0463 | Train Acc: 98.52% | Val Acc: 96.72%
+2026-03-16 13:56:23 | Epoch 10 | Time: 208.6s | Train Loss: 0.0438 | Train Acc: 98.62% | Val Acc: 97.00%
+2026-03-16 13:56:23 | 
+Teacher Training Complete. Best Validation Accuracy: 97.28%
+2026-03-16 13:56:23 | The upgraded teacher weights are saved as EfficientNet_B2_teacher_model.pth.

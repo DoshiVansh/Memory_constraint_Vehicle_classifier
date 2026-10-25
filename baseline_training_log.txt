@@ -1,0 +1,27 @@
+Training on device: cuda
+Total images: 13956
+Training on 11165 images, Validating on 2791 images.
+
+Epoch 1: Validation Accuracy improved from 0.00% to 27.52%. Saving model!
+Epoch 2: Validation Accuracy improved from 27.52% to 32.75%. Saving model!
+Epoch 3: Validation Accuracy improved from 32.75% to 35.65%. Saving model!
+Epoch 4: Validation Accuracy improved from 35.65% to 38.45%. Saving model!
+Epoch 5 | Time: 14.4s | Train Acc: 40.59% | Val Acc: 37.80%
+Epoch 6: Validation Accuracy improved from 38.45% to 41.42%. Saving model!
+Epoch 7 | Time: 13.3s | Train Acc: 42.05% | Val Acc: 41.02%
+Epoch 8: Validation Accuracy improved from 41.42% to 43.25%. Saving model!
+Epoch 9: Validation Accuracy improved from 43.25% to 43.32%. Saving model!
+Epoch 10 | Time: 14.2s | Train Acc: 44.17% | Val Acc: 42.85%
+Epoch 11 | Time: 12.9s | Train Acc: 45.42% | Val Acc: 42.92%
+Epoch 12: Validation Accuracy improved from 43.32% to 43.78%. Saving model!
+Epoch 13 | Time: 12.9s | Train Acc: 45.79% | Val Acc: 43.03%
+Epoch 14 | Time: 14.5s | Train Acc: 45.81% | Val Acc: 43.71%
+Epoch 15: Validation Accuracy improved from 43.78% to 46.40%. Saving model!
+Epoch 16 | Time: 13.3s | Train Acc: 47.38% | Val Acc: 44.86%
+Epoch 17: Validation Accuracy improved from 46.40% to 46.69%. Saving model!
+Epoch 18 | Time: 12.5s | Train Acc: 48.88% | Val Acc: 44.75%
+Epoch 19: Validation Accuracy improved from 46.69% to 47.94%. Saving model!
+Epoch 20: Validation Accuracy improved from 47.94% to 48.48%. Saving model!
+
+Training Complete. Best Validation Accuracy: 48.48%
+The best weights are saved as 'Baseline_model.pth'.

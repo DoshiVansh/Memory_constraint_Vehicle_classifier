@@ -1,0 +1,5 @@
+# CPU-only PyTorch wheels. Install the remaining project dependencies separately
+# from PyPI; see README.md.
+--index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0
+torchvision==0.21.0

@@ -1,0 +1,75 @@
+{
+  "schema_version": "0.1",
+  "status": "audit_only_fresh_run_pending",
+  "audit_date": "2026-10-25",
+  "repository": {
+    "git_commit": "732d1eeaadcd908e311f081d70a53bc606b5d042",
+    "working_tree_note": "Checkpoint and dataset assets are present locally and are not tracked in Git."
+  },
+  "model": {
+    "architecture": "torchvision.models.shufflenet_v2_x1_0",
+    "checkpoint": "student_model.pth",
+    "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+    "size_bytes": 2665366,
+    "size_mib": 2.54,
+    "max_size_bytes": 5000000,
+    "class_mapping": {
+      "0": "Bus",
+      "1": "Truck",
+      "2": "Car",
+      "3": "Bike",
+      "4": "None"
+    }
+  },
+  "dataset": {
+    "path": "test_dataset",
+    "version": null,
+    "provenance": "unverified",
+    "sample_count": 2500,
+    "class_counts": {
+      "Bus": 500,
+      "Truck": 500,
+      "Car": 500,
+      "Bike": 500,
+      "None": 500
+    },
+    "fingerprint_method": "sha256 of sorted per-file sha256sum output bytes",
+    "fingerprint": "34ce9044e7b87f67c45208254470486e59680518e0f2bfd0c787876e1d20c4ac"
+  },
+  "preprocessing": {
+    "color": "RGB",
+    "resize": [224, 224],
+    "interpolation": "torchvision Resize default",
+    "to_tensor": true,
+    "normalize_mean": [0.485, 0.456, 0.406],
+    "normalize_std": [0.229, 0.224, 0.225]
+  },
+  "fresh_run": {
+    "completed": false,
+    "reason": "PyTorch is not installed in the available Python environment.",
+    "overall_accuracy": null,
+    "per_class": null,
+    "confusion_matrix": null,
+    "cpu_latency_ms": null
+  },
+  "historical_reference": {
+    "source": "model_test_log.txt, 2026-03-16 14:25:58 entry",
+    "checkpoint_filename_in_log": "shuffleNet_v2_model.pth",
+    "checkpoint_sha256_matches_selected_checkpoint": true,
+    "dataset_fingerprint_matches_current_tree": null,
+    "sample_count": 2500,
+    "accuracy": 0.9244,
+    "clean_accuracy": 0.9728,
+    "augmented_accuracy": 0.876,
+    "per_class": {
+      "Bus": {"correct": 454, "support": 500, "accuracy": 0.908},
+      "Truck": {"correct": 463, "support": 500, "accuracy": 0.926},
+      "Car": {"correct": 439, "support": 500, "accuracy": 0.878},
+      "Bike": {"correct": 480, "support": 500, "accuracy": 0.96},
+      "None": {"correct": 475, "support": 500, "accuracy": 0.95}
+    },
+    "confusion_matrix": null,
+    "cpu_latency_ms": null,
+    "is_fresh_baseline": false
+  }
+}

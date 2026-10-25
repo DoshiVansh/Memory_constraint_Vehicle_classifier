@@ -1,0 +1,7 @@
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+mlflow==3.16.1
+torch==2.6.0
+torchvision==0.21.0
+Pillow==11.1.0
+PyYAML==6.0.2

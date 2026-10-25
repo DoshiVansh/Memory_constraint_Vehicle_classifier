@@ -1,0 +1,34 @@
+seed: 1729
+source_dir: ./imagenet_raw
+test_dir: ./test_dataset
+images_per_class: 500
+train_dir: ./vehicle_dataset
+max_training_images_per_class: 3000
+validation_fraction: 0.2
+image_size: [224, 224]
+corruption:
+  horizontal_flip_probability: 0.5
+  rotation_degrees: 25
+  translation_fraction: [0.2, 0.3]
+  scale_range: [0.6, 1.4]
+  brightness_jitter: 0.3
+  contrast_jitter: 0.3
+  random_erasing_probability: 0.5
+  random_erasing_scale: [0.02, 0.29]
+  random_erasing_ratio: [0.3, 4.39]
+datasets:
+  training:
+    path: ./vehicle_dataset
+    role: training
+    prefixed_classes: true
+    source: local curated training set; raw lineage not recorded
+  target:
+    path: ./test_dataset
+    role: target
+    prefixed_classes: false
+    source: fixed target evaluation set; raw lineage not recorded
+  ood:
+    path: ./test_MIO_TCD_data
+    role: ood
+    prefixed_classes: false
+    source: mapped MIO-TCD stress set; raw lineage not recorded
