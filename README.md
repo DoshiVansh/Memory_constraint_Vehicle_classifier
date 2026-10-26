@@ -258,6 +258,32 @@ This wrapper calls the same `VehicleClassifier` implementation and returns
 integer class indices.
 
 DVC can execute the manifest and validation stages with `dvc repro validate_data`.
+
+## Phase 6 Kubernetes staging and rollback
+
+The `k8s/` resources define a local staging namespace, CPU Deployment, internal
+ClusterIP Service, and release ConfigMap. Probes use `/health/live` and
+`/health/ready`; the pod has CPU/memory bounds, runs as a non-root user, and
+uses a read-only root filesystem. The checkpoint stays inside the immutable
+container image. No managed cluster or cloud budget is needed for this phase.
+
+`Jenkinsfile` deploys only a GHCR `image@sha256:...` reference. It accepts the
+complete Phase 5 release metadata JSON and checks that the image digest and
+champion model identity belong to the same release, then applies the staging
+resources, waits for the rollout, and calls readiness plus a real PNG prediction
+through the Service. If rollout or smoke validation fails, it restores the previous
+Deployment revision and model ConfigMap, waits for recovery, and smoke-checks
+the restored version. A failed first rollout removes the unverified
+Deployment. See [the Phase 6 runbook](docs/phase6_runbook.md) for local cluster,
+Jenkins credentials, deployment, observation, and cleanup steps.
+
+Phase 6 implementation files are present. A disposable kind cluster has been
+used to deploy the locally built Phase 4 image, pass readiness and prediction
+smokes, fail a rollout with an unavailable image, manually restore the previous
+Deployment revision, and pass the smokes again. The Jenkins pipeline has not
+yet been run: it still needs a configured Jenkins agent/credential and a
+published GHCR release digest. This local rollback demonstrates Kubernetes
+recovery, but does not close the full Jenkins and immutable-release gate.
 The complete ML pipeline (which trains the teacher and student) can be run with
 `dvc repro evaluate_target evaluate_ood` when the Phase 2 data and teacher
 pretraining weights are available; this may take substantial time.
