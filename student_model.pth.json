@@ -8,6 +8,9 @@
     "3": "Bike",
     "4": "None"
   },
+  "model_alias": "champion",
+  "model_name": "VehicleClassifier",
+  "model_version": "2",
   "preprocessing": {
     "color": "RGB",
     "mean": [

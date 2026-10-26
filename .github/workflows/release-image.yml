@@ -1,0 +1,101 @@
+name: Publish inference image
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Build, publish, and attest release metadata
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+
+      - name: Validate champion checkpoint before publishing
+        id: model
+        run: >-
+          python scripts/create_release_metadata.py --validate-only
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Normalize GHCR image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags and OCI labels
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+
+      - name: Build and publish image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: |
+            ${{ steps.metadata.outputs.labels }}
+            org.opencontainers.image.model.name=${{ steps.model.outputs.model_name }}
+            org.opencontainers.image.model.version=${{ steps.model.outputs.model_version }}
+            org.opencontainers.image.model.alias=${{ steps.model.outputs.model_alias }}
+            org.opencontainers.image.model.sha256=${{ steps.model.outputs.artifact_sha256 }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write release lineage metadata
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          python scripts/create_release_metadata.py \
+            --git-sha "$GITHUB_SHA" \
+            --release-tag "$GITHUB_REF_NAME" \
+            --image-name "$IMAGE_NAME" \
+            --image-digest "$IMAGE_DIGEST" \
+            --output reports/release_metadata.json
+
+      - name: Create GitHub Release with lineage manifest
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: reports/release_metadata.json
+          fail_on_unmatched_files: true
+
+      - name: Summarize immutable image reference
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          echo "Published: \`$IMAGE_NAME@$IMAGE_DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Model version: \`${{ steps.model.outputs.model_version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact SHA-256: \`${{ steps.model.outputs.artifact_sha256 }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Git SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"

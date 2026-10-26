@@ -27,6 +27,7 @@ python -m pip install --upgrade pip==25.0.1
 python -m pip install -r requirements-cpu.txt
 python -m pip install Pillow==11.1.0 PyYAML==6.0.2 pytest==8.3.5
 python -m pip install -r requirements-api.txt
+python -m pip install ruff==0.17.1
 python -m pip install -e . --no-deps
 ```
 
@@ -116,12 +117,59 @@ docker rm -f vehicle-classifier-api
 For host access during development, run `docker run --rm -p 8000:8000
 vehicle-classifier-api:phase4`, then use `python scripts/smoke_test_api.py` from
 the repository. Docker packages the checked-in `student_model.pth` and its
-generated `student_model.pth.json` integrity/contract metadata. Regenerate that
-sidecar after replacing the checkpoint with
-`python -m scripts.create_inference_manifest student_model.pth`.
+generated `student_model.pth.json` integrity/contract metadata. Regenerate the
+sidecar after replacing the checkpoint with the newly approved model version,
+for example:
+
+```bash
+python -m scripts.create_inference_manifest student_model.pth \
+  --model-name VehicleClassifier --model-version 2 --model-alias champion
+```
 The strict 5 MB limit applies to the serialized model weights, not the container;
 the verified CPU image is about 1.31 GiB because it includes PyTorch and
 TorchVision.
+
+## Phase 5 CI, training runs, and GHCR releases
+
+`.github/workflows/ci.yml` runs on every pull request and is also reused by the
+release workflow. It installs CPU PyTorch, runs Ruff, compiles the maintained
+Python modules, and runs pytest. It does not fetch DVC datasets or train a
+teacher/student model. To run the same checks locally, use `ruff check .` and
+`pytest -q`.
+
+The release workflow runs when a `v*` tag is pushed. It reruns the quality gate,
+checks that the packaged checkpoint matches the approved `champion` sidecar,
+builds and publishes the image to GHCR, then creates a GitHub Release with
+`release_metadata.json`. That file binds the Git SHA, MLflow model version,
+checkpoint SHA-256, and immutable image digest. Update
+`student_model.pth.json` with the approved model version whenever the promoted
+checkpoint changes. To release a verified commit:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag should point at a commit whose PR quality gate passed. Repository branch
+protection must also require the `PR Quality Gate / test-and-static-checks`
+status; adding a workflow alone does not prevent merging a failing PR.
+The release workflow also reruns this gate before publishing.
+
+The expensive training workflow is manual and targets a self-hosted Linux x64
+runner labeled `gpu`. That runner needs an NVIDIA GPU/driver and an Actions
+runner version compatible with Node 24 actions (2.327.1 or newer). Choose the
+CUDA wheel index that matches the runner's driver when dispatching the workflow.
+In repository Settings → Secrets and variables → Actions, add the
+`DVC_ENDPOINT_URL` variable and `DVC_ACCESS_KEY` / `DVC_SECRET_KEY` secrets. The
+configured endpoint must be reachable from the runner; `127.0.0.1` works only
+when RustFS runs on that same host. The workflow pulls the DVC datasets, runs
+the DVC teacher/student/evaluation stages, pushes DVC outputs, and saves the
+resulting `dvc.lock`, reports, model package, and local MLflow store as a
+downloadable Actions artifact. Review and commit an updated `dvc.lock` when you
+want that run's stage hashes to become the repository's reproducible reference.
+The first teacher-training run also needs internet access to download the
+configured ImageNet initialization, unless those weights are already cached on
+the runner.
 
 ## MLflow experiments and model promotion
 

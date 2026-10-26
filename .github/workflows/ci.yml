@@ -1,0 +1,50 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-static-checks:
+    name: test-and-static-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            requirements-cpu.txt
+            requirements-api.txt
+            pyproject.toml
+
+      - name: Install pinned CPU test environment
+        run: |
+          python -m pip install --upgrade pip==25.0.1
+          python -m pip install --extra-index-url https://pypi.org/simple -r requirements-cpu.txt
+          python -m pip install Pillow==11.1.0 PyYAML==6.0.2
+          python -m pip install -r requirements-api.txt
+          python -m pip install pytest==8.3.5 ruff==0.17.1
+          python -m pip install --no-deps -e .
+
+      - name: Lint Python source
+        run: python -m ruff check .
+
+      - name: Compile maintained Python modules
+        run: >-
+          python -m compileall -q vehicle_classifier_core scripts tests
+          train.py train_teacher.py train_distillation.py
+          evaluate_test_set.py evaluate_mio_tcd.py vehicle_classifier.py
+
+      - name: Run unit and API contract tests
+        env:
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+        run: python -m pytest -q

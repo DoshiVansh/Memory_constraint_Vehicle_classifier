@@ -248,6 +248,7 @@ model_test_log.txt
 mio_tcd_evaluation_log.txt
 reports/*_run.json
 /reports/phase3_smoke_*.json
+/reports/release_metadata.json
 /vehicle_dataset
 /test_dataset
 /test_MIO_TCD_data

@@ -89,7 +89,7 @@ def build_mio_tcd_dataset(seed=1729):
                 img = clean_transform(img)
                 save_path = os.path.join(class_dest_dir, f"clean_{i:04d}.jpg")
                 img.save(save_path)
-            except Exception as e:
+            except Exception:
                 pass # Skip corrupted Kaggle images quietly
                 
         # 2. Process AUGMENTED images
@@ -99,7 +99,7 @@ def build_mio_tcd_dataset(seed=1729):
                 img = test_augmentation(img)
                 save_path = os.path.join(class_dest_dir, f"aug_{i:04d}.jpg")
                 img.save(save_path)
-            except Exception as e:
+            except Exception:
                 pass
 
     print(f"\nMIO-TCD Stress-Test dataset successfully generated at: {TEST_DIR}")

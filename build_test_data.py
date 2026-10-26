@@ -3,7 +3,6 @@ import random
 import argparse
 from vehicle_classifier_core.config import load_config
 from vehicle_classifier_core.reproducibility import seed_everything
-import shutil
 from PIL import Image
 import torchvision.transforms as transforms
 

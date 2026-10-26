@@ -15,6 +15,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--model-name", default="VehicleClassifier")
+    parser.add_argument("--model-version")
+    parser.add_argument("--model-alias")
     args = parser.parse_args()
     if not args.checkpoint.is_file():
         parser.error(f"checkpoint does not exist: {args.checkpoint}")
@@ -31,6 +34,13 @@ def main():
         "sha256": file_sha256(args.checkpoint),
         "size_bytes": args.checkpoint.stat().st_size,
     }
+    if args.model_version is not None:
+        metadata["model_name"] = args.model_name
+        metadata["model_version"] = str(args.model_version)
+    if args.model_alias is not None:
+        if args.model_version is None:
+            parser.error("--model-alias requires --model-version")
+        metadata["model_alias"] = args.model_alias
     output = args.output or Path(f"{args.checkpoint}.json")
     output.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"Wrote {output} for {args.checkpoint}")
