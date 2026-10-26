@@ -37,14 +37,22 @@ class VehicleClassifier:
         """Return the predicted class index, preserving the original public contract."""
         try:
             with Image.open(image_path) as image:
-                tensor = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
+                decoded = image.convert("RGB")
         except Exception as exc:
             logger.exception("Unable to read inference image", extra={"image_path": str(image_path)})
             raise InferenceError(f"Unable to read image {image_path}: {exc}") from exc
+        return self.predict_image(decoded)
+
+    def predict_image(self, image: Image.Image) -> int:
+        """Predict from an already decoded PIL image."""
+        try:
+            tensor = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
+        except Exception as exc:
+            raise InferenceError(f"Unable to preprocess image: {exc}") from exc
         try:
             with torch.inference_mode():
                 prediction = self.model(tensor).argmax(dim=1).item()
         except Exception as exc:
-            logger.exception("Model inference failed", extra={"image_path": str(image_path)})
-            raise InferenceError(f"Inference failed for image {image_path}: {exc}") from exc
+            logger.exception("Model inference failed")
+            raise InferenceError(f"Inference failed: {exc}") from exc
         return int(prediction)

@@ -240,6 +240,7 @@ __marimo__/
 /teacher_model.pth
 /student_model.pth
 *.pth.json
+!/student_model.pth.json
 
 # Local logs and run outputs.
 *.log

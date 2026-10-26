@@ -15,9 +15,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==8.3.5"]
+dev = ["pytest==8.3.5", "httpx==0.28.1"]
 data = ["dvc[s3]==3.67.1"]
 tracking = ["mlflow==3.16.1"]
+api = [
+  "fastapi==0.115.12",
+  "uvicorn==0.34.2",
+  "python-multipart==0.0.20",
+]
 
 [tool.setuptools]
 packages = ["vehicle_classifier_core"]

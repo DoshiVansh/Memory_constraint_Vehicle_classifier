@@ -1,0 +1,30 @@
+{
+  "architecture": "shufflenet_v2_x1_0",
+  "checkpoint": "student_model.pth",
+  "class_mapping": {
+    "0": "Bus",
+    "1": "Truck",
+    "2": "Car",
+    "3": "Bike",
+    "4": "None"
+  },
+  "preprocessing": {
+    "color": "RGB",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "size": [
+      224,
+      224
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+  "size_bytes": 2665366
+}

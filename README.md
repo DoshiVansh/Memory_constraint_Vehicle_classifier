@@ -26,8 +26,12 @@ source .venv/bin/activate
 python -m pip install --upgrade pip==25.0.1
 python -m pip install -r requirements-cpu.txt
 python -m pip install Pillow==11.1.0 PyYAML==6.0.2 pytest==8.3.5
+python -m pip install -r requirements-api.txt
 python -m pip install -e . --no-deps
 ```
+
+`requirements-api.txt` installs the pinned FastAPI/ASGI server and HTTP client
+used by the API contract tests.
 
 For GPU training, install the pinned PyTorch/torchvision versions from the official CUDA wheel index matching your driver, then install the remaining packages and this project with `--no-deps` as above. The project configs choose CUDA automatically when that build can access it. PyTorch publishes version-specific CPU and CUDA install commands in its [previous versions guide](https://pytorch.org/get-started/previous-versions/).
 
@@ -77,6 +81,47 @@ python evaluate_mio_tcd.py --config configs/ood_evaluation.yaml
 # Run the interface, deterministic split, and metric checks
 pytest
 ```
+
+## Phase 4 inference API and Docker
+
+The FastAPI service loads the packaged CPU checkpoint once at startup, verifies
+its metadata and SHA-256, and does not access pretrained weights or the network.
+It accepts one multipart `file` upload in JPEG, PNG, or WEBP format. Requests
+are capped at 8 MiB and images at 20 megapixels. Successful responses contain
+`predicted_index`, `class_name`, and `model_sha256`; malformed images return
+HTTP 400, unsupported formats HTTP 415, and size-limit violations HTTP 413.
+`/health/live` checks that the process responds; `/health/ready` is successful
+only after package validation and model loading. Interactive docs are at
+`/docs` when the API is running.
+
+Run it locally after installing `requirements-api.txt`:
+
+```bash
+uvicorn vehicle_classifier_core.api:app --host 127.0.0.1 --port 8000
+python scripts/smoke_test_api.py
+pytest tests/test_api.py
+```
+
+Build the image and run a network-isolated container smoke test. The script runs
+inside the container and calls the service over loopback, proving inference
+does not require runtime access to pretrained-weight downloads:
+
+```bash
+docker build -t vehicle-classifier-api:phase4 .
+docker run -d --name vehicle-classifier-api --network none vehicle-classifier-api:phase4
+docker exec vehicle-classifier-api python /app/scripts/smoke_test_api.py
+docker rm -f vehicle-classifier-api
+```
+
+For host access during development, run `docker run --rm -p 8000:8000
+vehicle-classifier-api:phase4`, then use `python scripts/smoke_test_api.py` from
+the repository. Docker packages the checked-in `student_model.pth` and its
+generated `student_model.pth.json` integrity/contract metadata. Regenerate that
+sidecar after replacing the checkpoint with
+`python -m scripts.create_inference_manifest student_model.pth`.
+The strict 5 MB limit applies to the serialized model weights, not the container;
+the verified CPU image is about 1.31 GiB because it includes PyTorch and
+TorchVision.
 
 ## MLflow experiments and model promotion
 
@@ -170,10 +215,12 @@ The complete ML pipeline (which trains the teacher and student) can be run with
 pretraining weights are available; this may take substantial time.
 The MLflow database/artifacts remain local side effects and are not DVC outputs.
 The local DVC remote is initialized and populated, and the fresh canonical
-baseline and candidate quality gate are recorded. Model version 2 is a
-gate-passing candidate; assigning the `champion` alias still requires explicit
-approval. The full teacher/student training stages have not been run end to end
-because they are long on the available CPU-only runtime. See
+baseline and candidate quality gate are recorded. Model version 2 is approved
+and assigned the `champion` alias in the local MLflow registry. The two short
+training runs are smoke demonstrations rather than full experiment comparisons;
+full teacher/student training remains deferred because it is long on the
+available CPU-only runtime. DVC access from a collaborator's machine also
+remains unverified. See
 [phase status](docs/phase_status.md).
 
 `vehicle_dataset`, `test_dataset`, and `test_MIO_TCD_data` are stored in DVC, not Git. The raw `imagenet_raw/` and `mio_tcd_raw/` directories stay local until their redistribution rights are verified. RustFS stores data on the host disk and has no cloud fee; its single-node mode has no redundancy, so keep a backup. It binds to localhost by default. Sharing across computers requires binding to a trusted LAN, setting each client's `DVC_ENDPOINT_URL` to the host address, and keeping RustFS running. Do not expose this development endpoint to the public internet. Keep `.obsidian/` and `.env` private; both are ignored by Git.
