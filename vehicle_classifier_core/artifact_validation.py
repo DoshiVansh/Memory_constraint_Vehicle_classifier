@@ -45,4 +45,10 @@ def validate_inference_package(checkpoint_path, metadata_path=None):
     actual_sha256 = file_sha256(checkpoint)
     if metadata.get("sha256") != actual_sha256:
         raise ValueError("Checkpoint SHA-256 does not match its metadata")
-    return {"path": str(checkpoint), "sha256": actual_sha256, "size_bytes": size_bytes}
+    return {
+        "path": str(checkpoint),
+        "sha256": actual_sha256,
+        "size_bytes": size_bytes,
+        "model_version": str(metadata.get("model_version", "unknown")),
+        "architecture": metadata["architecture"],
+    }

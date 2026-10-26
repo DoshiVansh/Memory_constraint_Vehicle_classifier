@@ -4,11 +4,13 @@ import logging
 import os
 import warnings
 import io
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
+from prometheus_client import Counter, Gauge, Histogram, Info, make_asgi_app
 from starlette.responses import JSONResponse
 
 from .artifact_validation import validate_inference_package
@@ -22,6 +24,81 @@ ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 if MAX_UPLOAD_BYTES <= 0 or MAX_IMAGE_PIXELS <= 0:
     raise ValueError("MAX_UPLOAD_BYTES and MAX_IMAGE_PIXELS must be positive integers")
 Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
+
+REQUESTS = Counter(
+    "vehicle_classifier_requests_total",
+    "HTTP requests handled by the inference service.",
+    ("method", "endpoint", "status"),
+)
+ERRORS = Counter(
+    "vehicle_classifier_errors_total",
+    "HTTP errors grouped into bounded status classes.",
+    ("endpoint", "error_type"),
+)
+REQUEST_DURATION = Histogram(
+    "vehicle_classifier_request_duration_seconds",
+    "HTTP request duration in seconds.",
+    ("endpoint",),
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
+)
+IN_PROGRESS = Gauge(
+    "vehicle_classifier_in_progress_requests",
+    "Inference API requests currently being handled.",
+    ("endpoint",),
+)
+INFERENCE_DURATION = Histogram(
+    "vehicle_classifier_inference_duration_seconds",
+    "Time spent in the model prediction call, excluding image upload and decode.",
+    ("model_version",),
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5),
+)
+PREDICTIONS = Counter(
+    "vehicle_classifier_predictions_total",
+    "Successful predictions by fixed class name and loaded model version.",
+    ("predicted_class", "model_version"),
+)
+MODEL_INFO = Info("vehicle_classifier_model", "Identity of the loaded classifier model.")
+KNOWN_ENDPOINTS = {"/predict", "/health/live", "/health/ready"}
+IGNORED_METRIC_PATHS = {"/metrics", "/health/live", "/health/ready"}
+
+
+class PrometheusMetricsMiddleware:
+    """Record HTTP metrics using route templates and a fixed label vocabulary."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("path") in IGNORED_METRIC_PATHS:
+            await self.app(scope, receive, send)
+            return
+
+        raw_path = scope.get("path", "")
+        endpoint = raw_path if raw_path in KNOWN_ENDPOINTS else "unmatched"
+        method = scope.get("method", "OTHER")
+        if method not in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}:
+            method = "OTHER"
+        started = time.perf_counter()
+        status_code = 500
+        IN_PROGRESS.labels(endpoint=endpoint).inc()
+
+        async def capture_status(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, capture_status)
+        finally:
+            elapsed = time.perf_counter() - started
+            IN_PROGRESS.labels(endpoint=endpoint).dec()
+            REQUESTS.labels(method=method, endpoint=endpoint, status=str(status_code)).inc()
+            REQUEST_DURATION.labels(endpoint=endpoint).observe(elapsed)
+            if status_code >= 500:
+                ERRORS.labels(endpoint=endpoint, error_type="http_5xx").inc()
+            elif status_code >= 400:
+                ERRORS.labels(endpoint=endpoint, error_type="http_4xx").inc()
 
 
 class PredictionResponse(BaseModel):
@@ -97,6 +174,8 @@ async def lifespan(app: FastAPI):
     # uses weights=None, so startup has no pretrained-weight download path.
     app.state.classifier = VehicleClassifier(model_path=model_path)
     app.state.model_sha256 = package["sha256"]
+    app.state.model_version = package["model_version"]
+    MODEL_INFO.info({"model_version": package["model_version"], "architecture": package["architecture"]})
     logger.info("Inference package validated", extra={"model_sha256": package["sha256"]})
     yield
     app.state.classifier = None
@@ -111,6 +190,8 @@ app = FastAPI(
 
 
 app.add_middleware(RequestBodySizeLimit, max_body_bytes=MAX_UPLOAD_BYTES + 256 * 1024)
+app.add_middleware(PrometheusMetricsMiddleware)
+app.mount("/metrics", make_asgi_app())
 
 
 @app.get("/health/live", tags=["health"])
@@ -161,7 +242,17 @@ async def predict(request: Request, file: UploadFile = File(...)):
         with Image.open(io.BytesIO(contents)) as image:
             image.load()
             rgb = image.convert("RGB")
-        prediction = request.app.state.classifier.predict_image(rgb)
+        model_version = getattr(request.app.state, "model_version", "unknown")
+        inference_started = time.perf_counter()
+        try:
+            prediction = request.app.state.classifier.predict_image(rgb)
+        finally:
+            INFERENCE_DURATION.labels(model_version=model_version).observe(
+                time.perf_counter() - inference_started
+            )
+        PREDICTIONS.labels(
+            predicted_class=CLASS_IDX[prediction], model_version=model_version
+        ).inc()
     except HTTPException:
         raise
     except (

@@ -284,6 +284,24 @@ Deployment revision, and pass the smokes again. The Jenkins pipeline has not
 yet been run: it still needs a configured Jenkins agent/credential and a
 published GHCR release digest. This local rollback demonstrates Kubernetes
 recovery, but does not close the full Jenkins and immutable-release gate.
+
+## Phase 7 monitoring and performance
+
+The inference API exposes bounded-label Prometheus metrics at `/metrics` for
+HTTP request/error counts, end-to-end and model-call latency, in-flight requests,
+prediction class counts by model version, loaded-model identity, and API process
+CPU/memory. `/metrics` and health probes are excluded from user request totals.
+Prometheus scrapes the API and evaluates local warning rules; Grafana provisions
+an eight-panel dashboard for traffic, errors, latency, class distribution, and
+process resources. See [the Phase 7 runbook](docs/phase7_monitoring.md) to start
+the local stack, open its UIs through port-forwarding, and repeat the load test.
+
+The local kind demonstration passed a 100-request-per-concurrency run at
+concurrency 1, 2, and 4 (300 valid predictions, zero errors), and the dashboard
+and Prometheus datasource were verified. Results are recorded in
+`reports/phase7_local_load.json` and summarized in the runbook. These synthetic,
+same-host measurements are for demonstration only; they are not production
+capacity estimates or SLOs. No alert notification contact point is configured.
 The complete ML pipeline (which trains the teacher and student) can be run with
 `dvc repro evaluate_target evaluate_ood` when the Phase 2 data and teacher
 pretraining weights are available; this may take substantial time.

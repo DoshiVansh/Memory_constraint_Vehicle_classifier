@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vehicle-classifier-grafana-provisioning
+  namespace: vehicle-classifier-staging
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: vehicle-classifier-prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.vehicle-classifier-staging.svc.cluster.local:9090
+        isDefault: true
+        editable: false
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: vehicle-classifier
+        orgId: 1
+        folder: Vehicle Classifier
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /etc/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vehicle-classifier-grafana-dashboard
+  namespace: vehicle-classifier-staging
+data:
+  vehicle-classifier.json: |
+    {
+      "id": null,
+      "uid": "vehicle-classifier-overview",
+      "title": "Vehicle Classifier Overview",
+      "description": "Traffic, API errors, latency, prediction distribution, and API process resources. Local demo panels; establish service objectives only after measuring the target environment.",
+      "schemaVersion": 41,
+      "version": 1,
+      "refresh": "5s",
+      "time": {"from": "now-15m", "to": "now"},
+      "timezone": "browser",
+      "panels": [
+        {"id": 1, "type": "timeseries", "title": "Prediction request rate (requests/sec)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m]))", "legendFormat": "requests/sec"}], "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 2, "type": "timeseries", "title": "Prediction HTTP error rate (%)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\",error_type=\"http_4xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.000001)", "legendFormat": "4xx percent"}, {"refId": "B", "expr": "100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\",error_type=\"http_5xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.000001)", "legendFormat": "5xx percent"}], "fieldConfig": {"defaults": {"unit": "percent", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 3, "type": "timeseries", "title": "HTTP request latency (p50 / p95)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.50, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[5m])))", "legendFormat": "p50"}, {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[5m])))", "legendFormat": "p95"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 4, "type": "timeseries", "title": "Model inference latency (p95)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, model_version) (rate(vehicle_classifier_inference_duration_seconds_bucket[5m])))", "legendFormat": "model {{model_version}}"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 5, "type": "timeseries", "title": "Successful predictions by class (5m increase)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (predicted_class) (increase(vehicle_classifier_predictions_total[5m]))", "legendFormat": "{{predicted_class}}"}], "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 6, "type": "timeseries", "title": "API process CPU (cores)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"vehicle-classifier-api\"}[2m])", "legendFormat": "process CPU"}], "fieldConfig": {"defaults": {"unit": "cores", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 7, "type": "timeseries", "title": "API process resident memory", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{job=\"vehicle-classifier-api\"}", "legendFormat": "resident memory"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
+        {"id": 8, "type": "timeseries", "title": "Requests currently in progress", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_in_progress_requests)", "legendFormat": "in progress"}], "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}}
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-classifier-grafana
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-grafana
+    app.kubernetes.io/part-of: vehicle-classifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vehicle-classifier-grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vehicle-classifier-grafana
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: grafana
+          image: grafana/grafana:13.2.4
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            - name: GF_USERS_DEFAULT_THEME
+              value: light
+            - name: GF_PLUGINS_PREINSTALL_DISABLED
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning
+              readOnly: true
+            - name: dashboards
+              mountPath: /etc/grafana/dashboards
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/grafana
+      volumes:
+        - name: provisioning
+          configMap:
+            name: vehicle-classifier-grafana-provisioning
+            items:
+              - key: datasources.yaml
+                path: datasources/datasources.yaml
+              - key: dashboards.yaml
+                path: dashboards/dashboards.yaml
+        - name: dashboards
+          configMap:
+            name: vehicle-classifier-grafana-dashboard
+        - name: data
+          emptyDir:
+            sizeLimit: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-grafana
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: vehicle-classifier-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

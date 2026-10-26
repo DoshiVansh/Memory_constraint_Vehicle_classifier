@@ -57,7 +57,6 @@ Parameters → RELEASE_METADATA_JSON**. The pipeline parses the image and model
 identity together and rejects unsupported schemas, non-champion versions,
 mismatched image digest/reference, invalid hashes, commits, tags, architecture,
 or artifact size.
-- `RELEASE_GIT_SHA`: `git_sha`
 
 The resulting immutable reference looks like
 `ghcr.io/owner/repository@sha256:<64 lowercase hex digits>`. Do not substitute
