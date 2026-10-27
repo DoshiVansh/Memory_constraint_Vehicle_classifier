@@ -134,8 +134,8 @@ stages:
       size: 805
     - path: vehicle_classifier_core/predictor.py
       hash: md5
-      md5: b616550df4b5fe6e320b2af48930b6a6
-      size: 2185
+      md5: 4406777369cfaee49f7305a64866944f
+      size: 2449
     - path: vehicle_classifier_core/preprocessing.py
       hash: md5
       md5: 23d33132098f4c7a583c1eee1c914d74
@@ -151,8 +151,8 @@ stages:
     outs:
     - path: reports/evaluation.json
       hash: md5
-      md5: 88209c66be1c15621f27324c173224da
-      size: 5813
+      md5: 6a99980da06f180d7ebd67ef1dc2a319
+      size: 5822
   evaluate_ood:
     cmd: python evaluate_mio_tcd.py --config configs/ood_evaluation.yaml
     deps:
@@ -203,8 +203,8 @@ stages:
       size: 805
     - path: vehicle_classifier_core/predictor.py
       hash: md5
-      md5: b616550df4b5fe6e320b2af48930b6a6
-      size: 2185
+      md5: 4406777369cfaee49f7305a64866944f
+      size: 2449
     - path: vehicle_classifier_core/preprocessing.py
       hash: md5
       md5: 23d33132098f4c7a583c1eee1c914d74
@@ -220,5 +220,5 @@ stages:
     outs:
     - path: reports/ood_evaluation.json
       hash: md5
-      md5: 529d8bcde6e6daf290c7969342d89d18
-      size: 5855
+      md5: d8c0b94740522dda9e9bf77306f4f848
+      size: 5863

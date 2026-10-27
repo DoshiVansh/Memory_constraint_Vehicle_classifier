@@ -1,5 +1,11 @@
 # Memory-Constrained Vehicle Classifier
 
+Project handoff docs: [architecture](docs/architecture.md),
+[data card](docs/data_card.md), [model card](docs/model_card.md),
+[known limitations](docs/known_limitations.md),
+[operator runbook](docs/runbook.md), [demo script and FAQ](docs/demo_script.md),
+and [phase/evidence status](docs/phase_status.md).
+
 Five-class image classifier using a ShuffleNet V2 x1.0 student distilled from an EfficientNet-B2 teacher. The legacy interface remains available:
 
 ```python
@@ -302,6 +308,77 @@ and Prometheus datasource were verified. Results are recorded in
 `reports/phase7_local_load.json` and summarized in the runbook. These synthetic,
 same-host measurements are for demonstration only; they are not production
 capacity estimates or SLOs. No alert notification contact point is configured.
+
+## Phase 8 end-to-end handoff
+
+The local final pass evaluated the existing champion checkpoint without
+retraining, recorded target and OOD evaluation runs in MLflow, validated the
+checkpoint/sidecar contract, rebuilt the API image, passed its container smoke
+with networking disabled, and rolled that image through the local kind
+Deployment. Readiness and a real prediction passed with the expected
+checkpoint SHA. Prometheus and Grafana remained available in the local cluster.
+The second clean-clone DVC retrieval was blocked by this machine's temporary
+storage quota; Phase 2's earlier retrieval is recorded in `docs/phase_status.md`.
+
+Fresh target metrics: 92.40% overall (97.36% clean, 87.44% augmented) on 2,500
+fixed samples. Fresh mapped MIO-TCD stress-set accuracy: 43.24%. This OOD score
+is a material limitation, not a production quality claim. See
+[`docs/model_card.md`](docs/model_card.md) for class metrics, checkpoint SHA,
+scope, and known limitations.
+
+Core local end-to-end commands, from a checkout with DVC data available:
+
+```bash
+# Retrieve versioned datasets and validate their manifest.
+dvc pull
+dvc repro validate_data
+
+# Evaluate only the current checkpoint (does not train teacher/student).
+dvc repro --single-item evaluate_target
+dvc repro --single-item evaluate_ood
+
+# Inspect MLflow runs at http://127.0.0.1:5000.
+mlflow server --backend-store-uri sqlite:///mlflow.db \
+  --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000
+
+# Check the packaged champion checkpoint and sidecar.
+python scripts/create_release_metadata.py --validate-only
+
+# Build and exercise API offline; the container runs the API itself.
+docker build -t vehicle-classifier-api:local .
+docker run -d --name vehicle-classifier-api --network none vehicle-classifier-api:local
+docker exec vehicle-classifier-api python /app/scripts/smoke_test_api.py
+docker rm -f vehicle-classifier-api
+```
+
+For local Kubernetes, use the complete export/render/rollout, port-forward,
+Prometheus, Grafana, load-test, diagnosis and rollback commands in
+[`docs/runbook.md`](docs/runbook.md). The known kind cluster name is
+`vehicle-classifier-phase6`; a fresh machine must first install Docker/kind/
+kubectl and create that cluster. Do not confuse this local `:local` image with
+the immutable GHCR digest expected by Jenkins.
+
+### Phase 8 evidence and remaining boundary
+
+The DVC single-stage evaluations logged fresh MLflow run IDs and stored
+confusion matrices in `reports/evaluation.json` and
+`reports/ood_evaluation.json`; both identify checkpoint SHA
+`c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4` and data
+manifest SHA `3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a`.
+They ran in a Python 3.10.22 CPU container with PyTorch 2.6.0+cpu. The second
+clean-clone retrieval did not complete in this pass.
+
+No GitHub release tag was created or image published. GitHub branch protection,
+Actions run screenshots, Jenkins agent/credentials, GHCR digest rollout and
+Jenkins screenshot remain external setup/evidence. DVC retrieval from a
+teammate's computer is also unverified. These limitations are listed in
+[`docs/phase_status.md`](docs/phase_status.md) and
+[`docs/evidence/README.md`](docs/evidence/README.md). The project is
+documented and demonstrated locally, but the full Phase 8 exit gate (“someone
+outside the team can run it from a clean clone”) is not yet fully closed.
+Actual local MLflow run/model-version and Grafana screenshots, plus the
+Kubernetes rollout/rollback transcript, are indexed in
+[`docs/evidence/README.md`](docs/evidence/README.md).
 The complete ML pipeline (which trains the teacher and student) can be run with
 `dvc repro evaluate_target evaluate_ood` when the Phase 2 data and teacher
 pretraining weights are available; this may take substantial time.

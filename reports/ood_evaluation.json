@@ -1,68 +1,68 @@
 {
   "sample_count": 2500,
-  "accuracy": 0.43799999356269836,
+  "accuracy": 0.4323999881744385,
   "per_class": {
     "0": {
       "support": 500,
-      "correct": 122,
-      "accuracy": 0.24400000274181366
+      "correct": 113,
+      "accuracy": 0.22599999606609344
     },
     "1": {
       "support": 500,
-      "correct": 119,
-      "accuracy": 0.23800000548362732
+      "correct": 117,
+      "accuracy": 0.23399999737739563
     },
     "2": {
       "support": 500,
-      "correct": 412,
-      "accuracy": 0.8240000009536743
+      "correct": 411,
+      "accuracy": 0.8220000267028809
     },
     "3": {
       "support": 500,
-      "correct": 114,
-      "accuracy": 0.2280000001192093
+      "correct": 110,
+      "accuracy": 0.2199999988079071
     },
     "4": {
       "support": 500,
-      "correct": 328,
-      "accuracy": 0.656000018119812
+      "correct": 330,
+      "accuracy": 0.6600000262260437
     }
   },
   "confusion_matrix": [
     [
-      122,
-      60,
-      249,
+      113,
+      55,
+      260,
       15,
-      54
+      57
     ],
     [
       2,
-      119,
-      312,
+      117,
+      313,
       18,
-      49
+      50
     ],
     [
       0,
-      5,
-      412,
-      7,
-      76
+      4,
+      411,
+      8,
+      77
     ],
     [
       2,
-      15,
-      121,
-      114,
-      248
+      13,
+      122,
+      110,
+      253
     ],
     [
-      2,
-      9,
-      147,
-      14,
-      328
+      3,
+      8,
+      146,
+      13,
+      330
     ]
   ],
   "classes": [
@@ -74,17 +74,17 @@
   ],
   "clean": {
     "sample_count": 1250,
-    "accuracy": 0.4424000084400177,
+    "accuracy": 0.4368000030517578,
     "per_class": {
       "0": {
         "support": 250,
-        "correct": 65,
-        "accuracy": 0.25999999046325684
+        "correct": 63,
+        "accuracy": 0.25200000405311584
       },
       "1": {
         "support": 250,
-        "correct": 69,
-        "accuracy": 0.2759999930858612
+        "correct": 67,
+        "accuracy": 0.2680000066757202
       },
       "2": {
         "support": 250,
@@ -93,61 +93,61 @@
       },
       "3": {
         "support": 250,
-        "correct": 71,
-        "accuracy": 0.2840000092983246
+        "correct": 67,
+        "accuracy": 0.2680000066757202
       },
       "4": {
         "support": 250,
-        "correct": 135,
-        "accuracy": 0.5400000214576721
+        "correct": 136,
+        "accuracy": 0.5440000295639038
       }
     },
     "confusion_matrix": [
       [
-        65,
-        28,
-        128,
+        63,
+        24,
+        132,
         9,
-        20
+        22
       ],
       [
         1,
-        69,
-        157,
+        67,
+        158,
         7,
-        16
+        17
       ],
       [
         0,
-        3,
+        2,
         213,
-        4,
+        5,
         30
       ],
       [
         1,
-        13,
-        57,
-        71,
-        108
+        11,
+        60,
+        67,
+        111
       ],
       [
-        1,
-        7,
+        2,
+        6,
         97,
-        10,
-        135
+        9,
+        136
       ]
     ]
   },
   "augmented": {
     "sample_count": 1250,
-    "accuracy": 0.4336000084877014,
+    "accuracy": 0.42800000309944153,
     "per_class": {
       "0": {
         "support": 250,
-        "correct": 57,
-        "accuracy": 0.2280000001192093
+        "correct": 50,
+        "accuracy": 0.20000000298023224
       },
       "1": {
         "support": 250,
@@ -156,8 +156,8 @@
       },
       "2": {
         "support": 250,
-        "correct": 199,
-        "accuracy": 0.7960000038146973
+        "correct": 198,
+        "accuracy": 0.7919999957084656
       },
       "3": {
         "support": 250,
@@ -166,17 +166,17 @@
       },
       "4": {
         "support": 250,
-        "correct": 193,
-        "accuracy": 0.7720000147819519
+        "correct": 194,
+        "accuracy": 0.7760000228881836
       }
     },
     "confusion_matrix": [
       [
-        57,
-        32,
-        121,
+        50,
+        31,
+        128,
         6,
-        34
+        35
       ],
       [
         1,
@@ -188,30 +188,30 @@
       [
         0,
         2,
-        199,
+        198,
         3,
-        46
+        47
       ],
       [
         1,
         2,
-        64,
+        62,
         43,
-        140
+        142
       ],
       [
         1,
         2,
-        50,
+        49,
         4,
-        193
+        194
       ]
     ]
   },
-  "elapsed_seconds": 25.23537510100141,
-  "mean_latency_ms": 10.094150040400564,
+  "elapsed_seconds": 27.481669210999826,
+  "mean_latency_ms": 10.99266768439993,
   "run": {
-    "git_revision": "0762ae53911e71a0ac2058073522d43f7ff9f225",
+    "git_revision": "62b322e16ad81f55bcae8817d70fc138e9c9d54f",
     "config": {
       "seed": 1729,
       "dataset_dir": "./test_MIO_TCD_data",
@@ -245,17 +245,17 @@
     "checkpoint_sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
     "checkpoint_size_bytes": 2665366,
     "environment": {
-      "python": "3.10.20",
-      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
-      "torch": "2.5.1",
-      "torchvision": "0.20.1",
-      "pillow": "12.1.1",
-      "pyyaml": "6.0.3",
-      "git_revision": "0762ae53911e71a0ac2058073522d43f7ff9f225",
+      "python": "3.10.22",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.41",
+      "torch": "2.6.0+cpu",
+      "torchvision": "0.21.0+cpu",
+      "pillow": "11.1.0",
+      "pyyaml": "6.0.2",
+      "git_revision": "62b322e16ad81f55bcae8817d70fc138e9c9d54f",
       "git_working_tree_dirty": true,
       "configured_device": "auto",
       "selected_device": null,
-      "cuda_version": "12.1",
+      "cuda_version": null,
       "gpu_name": null,
       "config": {
         "seed": 1729,
@@ -297,10 +297,10 @@
       "path": "data/manifests/data_manifest.json",
       "sha256": "3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a"
     },
-    "mlflow_run_id": "1eceef0442604930938d712f74ddc5c9",
+    "mlflow_run_id": "7eb922a3882349d48121f4bf91024cfb",
     "data_version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
-    "dvc_lock_sha256": "9fd8a19e105a90d05fe51330c7cd8ec8039ae34d91a79f2d60abaa8d8b48e66c",
-    "git_working_tree_dirty": true,
-    "source_snapshot_sha256": "66e8f9c76a476ab199b3f8174130d545161c845057285bb2b466b390365fb2b2"
+    "dvc_lock_sha256": "dcf514c800744261b2e12cf7182b5546d5f2c71c794a2b2d337dc1ca54788e50",
+    "git_working_tree_dirty": false,
+    "source_snapshot_sha256": "9cbe106a22dbff99b4148d69d8c6db91ad728691d6e3a011a4aee2abfbc6fec9"
   }
 }

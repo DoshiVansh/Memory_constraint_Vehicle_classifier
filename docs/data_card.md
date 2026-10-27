@@ -1,4 +1,4 @@
-# Data card (Phase 2 draft)
+# Data card
 
 ## Versioned datasets
 
@@ -44,5 +44,10 @@ limitation above remain unresolved.
 
 Evaluators include the manifest's SHA-256 in their output to identify the exact
 data contents. The DVC data pointers and manifest cache have been pushed to
-the local RustFS remote. A temporary clean checkout successfully retrieved all
-three datasets and rebuilt the identical manifest SHA-256 and validation report.
+the local RustFS remote. A previous Phase 2 temporary checkout is recorded as
+having retrieved all three datasets and rebuilt the identical manifest
+SHA-256 and validation report. During the Phase 8 repeat attempt, the OOD
+subset retrieved, but the full target/training retrieval exceeded the
+temporary filesystem quota; it was stopped and the partial temporary checkout
+removed. Reconfirm clean-checkout retrieval on a machine with enough free
+storage before claiming this was repeated in Phase 8.
