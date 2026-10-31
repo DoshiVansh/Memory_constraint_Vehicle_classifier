@@ -70,6 +70,12 @@ jobs:
 
             python scripts/render_k8s_manifests.py
             kubectl apply -f k8s/namespace.yaml
+            kubectl create secret docker-registry ghcr-pull-secret \
+              --namespace vehicle-classifier-staging \
+              --docker-server=ghcr.io \
+              --docker-username="${{ github.actor }}" \
+              --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+              --dry-run=client -o yaml | kubectl apply -f -
             kubectl apply -f k8s/configmap.yaml
             kubectl apply -f k8s/deployment.yaml
             kubectl apply -f k8s/service.yaml

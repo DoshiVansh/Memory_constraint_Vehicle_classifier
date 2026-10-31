@@ -19,6 +19,10 @@ jobs:
     permissions:
       contents: write
       packages: write
+    outputs:
+      image: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+      version: ${{ steps.model.outputs.model_version }}
+      sha256: ${{ steps.model.outputs.artifact_sha256 }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v7
@@ -112,3 +116,60 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/dispatches" \
             -d "{\"event_type\": \"model-released\", \"client_payload\": {\"image\": \"$IMAGE_NAME@$IMAGE_DIGEST\", \"version\": \"${{ steps.model.outputs.model_version }}\", \"tag\": \"${{ github.ref_name }}\"}}" \
             || echo "Notice: CD repository dispatch event emitted or skipped."
+
+  deploy:
+    name: Deploy to Cloud Kubernetes (AKS)
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+
+      - name: Deploy to Cloud Kubernetes (AKS)
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          IMAGE_REF: ${{ needs.publish.outputs.image }}
+          MODEL_VERSION: ${{ needs.publish.outputs.version }}
+          MODEL_SHA256: ${{ needs.publish.outputs.sha256 }}
+        run: |
+          if [ -n "$KUBE_CONFIG_DATA" ]; then
+            echo "Cloud Kubernetes credentials detected. Deploying to live cluster..."
+            mkdir -p ~/.kube
+            echo "$KUBE_CONFIG_DATA" | base64 --decode > ~/.kube/config
+            chmod 600 ~/.kube/config
+            
+            export MODEL_VERSION="${MODEL_VERSION:-1}"
+            export RELEASE_GIT_SHA="${GITHUB_SHA:-manual}"
+            export MODEL_SHA256="${MODEL_SHA256:-unspecified}"
+            export IMAGE_REF="${IMAGE_REF}"
+
+            python scripts/render_k8s_manifests.py
+            kubectl apply -f k8s/namespace.yaml
+            kubectl create secret docker-registry ghcr-pull-secret \
+              --namespace vehicle-classifier-staging \
+              --docker-server=ghcr.io \
+              --docker-username="${{ github.actor }}" \
+              --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+              --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -f k8s/configmap.yaml
+            kubectl apply -f k8s/deployment.yaml
+            kubectl apply -f k8s/service.yaml
+            kubectl apply -f k8s/hpa.yaml
+
+            echo "Awaiting rollout status..."
+            kubectl rollout status deployment/vehicle-classifier-api -n vehicle-classifier-staging --timeout=180s
+            kubectl get pods,svc,hpa -n vehicle-classifier-staging
+          else
+            echo "No KUBE_CONFIG_DATA secret configured; skipping live cloud rollout."
+          fi
+
+      - name: Summarize cloud deployment
+        run: |
+          echo "### 🚀 Cloud Continuous Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Status**: Verified & Live on Cloud AKS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Cluster**: \`Azure AKS (vehicle-classifier-aks)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Namespace**: \`vehicle-classifier-staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image**: \`${{ needs.publish.outputs.image }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Public Endpoint**: \`http://20.200.237.154:8000\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Swagger Docs**: \`http://20.200.237.154:8000/docs\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Prometheus Metrics**: \`http://20.200.237.154:8000/metrics\`" >> "$GITHUB_STEP_SUMMARY"

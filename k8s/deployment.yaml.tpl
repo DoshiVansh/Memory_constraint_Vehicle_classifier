@@ -28,6 +28,8 @@ spec:
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 20
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
