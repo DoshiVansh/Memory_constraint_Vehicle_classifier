@@ -172,7 +172,14 @@ def tracked_run(kind: str):
                 mlflow.log_artifact(str(snapshot["archive"]), artifact_path="lineage")
                 mlflow.set_tag("source_snapshot_file_count", str(snapshot["file_count"]))
                 try:
-                    result = function(config_path, *args, **kwargs)
+                    if hasattr(mlflow, "start_span"):
+                        with mlflow.start_span(name=f"{kind}_execution") as span:
+                            span.set_inputs({"config_path": str(config_path), "workflow": kind})
+                            result = function(config_path, *args, **kwargs)
+                            if isinstance(result, dict):
+                                span.set_outputs({k: v for k, v in result.items() if isinstance(v, (int, float, str))})
+                    else:
+                        result = function(config_path, *args, **kwargs)
                     if isinstance(result, dict):
                         result["mlflow_run_id"] = run.info.run_id
                         result["source_snapshot_sha256"] = snapshot["sha256"]
