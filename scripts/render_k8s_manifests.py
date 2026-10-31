@@ -1,7 +1,6 @@
 """Utility script to substitute environment variables into Kubernetes manifest templates."""
 
 import os
-import sys
 
 TEMPLATES = [
     ("k8s/configmap.yaml.tpl", "k8s/configmap.yaml"),

@@ -16,7 +16,6 @@ from prometheus_client import Counter, Gauge, Histogram, Info, make_asgi_app
 from starlette.responses import JSONResponse
 
 from .artifact_validation import validate_inference_package
-from .model import CLASS_IDX
 from .predictor import InferenceError, VehicleClassifier
 from .telemetry import (
     extract_trace_context,

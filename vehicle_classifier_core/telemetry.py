@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
@@ -13,7 +13,7 @@ from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
     SpanExporter,
 )
-from opentelemetry.trace import Span, Status, StatusCode, Tracer
+from opentelemetry.trace import Span, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 logger = logging.getLogger(__name__)

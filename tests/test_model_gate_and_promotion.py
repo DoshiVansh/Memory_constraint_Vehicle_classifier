@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-import pytest
 import yaml
 
 from vehicle_classifier_core.model_gate import evaluate_model_gate

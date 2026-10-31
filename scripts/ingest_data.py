@@ -23,7 +23,6 @@ Or manually (for debugging only):
 
 import argparse
 import json
-import os
 import random
 import shutil
 from pathlib import Path

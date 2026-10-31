@@ -2,14 +2,12 @@
 
 import asyncio
 import io
-import pytest
 import httpx
 from PIL import Image
 
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from vehicle_classifier_core import api
 from vehicle_classifier_core.telemetry import (
-    extract_trace_context,
     format_span_id,
     format_trace_id,
     setup_telemetry,
