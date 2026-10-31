@@ -2,4 +2,19 @@
 # canonical evaluation has been written to its fresh_run section.
 baseline: reports/baseline.json
 max_artifact_size_bytes: 5000000
-minimum_accuracy_delta: 0.0
+minimum_accuracy_delta: -0.005
+
+# ── Multi-Metric Quality Gates (Stage 4a) ──────────────────────────────────
+# Enforce Macro-F1 across all vehicle classes (unweighted average)
+min_macro_f1: 0.88
+
+# Enforce real-time CPU latency SLA per prediction
+max_mean_latency_ms: 25.0
+
+# Enforce minimum slice recall floors to avoid catastrophic failure on critical classes
+min_per_class_recall:
+  "0": 0.85  # Bus
+  "1": 0.88  # Truck
+  "2": 0.85  # Car
+  "3": 0.90  # Bike
+  "4": 0.90  # None

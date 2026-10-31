@@ -1,13 +1,15 @@
 """FastAPI inference service for the vehicle classifier."""
 
+import asyncio
+import io
 import logging
 import os
-import warnings
-import io
+from pathlib import Path
 import time
+import warnings
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 from prometheus_client import Counter, Gauge, Histogram, Info, make_asgi_app
@@ -16,8 +18,15 @@ from starlette.responses import JSONResponse
 from .artifact_validation import validate_inference_package
 from .model import CLASS_IDX
 from .predictor import InferenceError, VehicleClassifier
+from .telemetry import (
+    extract_trace_context,
+    format_trace_id,
+    get_tracer,
+    setup_telemetry,
+)
 
 logger = logging.getLogger(__name__)
+tracer = get_tracer()
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
 MAX_IMAGE_PIXELS = int(os.getenv("MAX_IMAGE_PIXELS", str(20_000_000)))
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
@@ -56,6 +65,17 @@ PREDICTIONS = Counter(
     "vehicle_classifier_predictions_total",
     "Successful predictions by fixed class name and loaded model version.",
     ("predicted_class", "model_version"),
+)
+PREDICTION_CONFIDENCE = Histogram(
+    "vehicle_classifier_prediction_confidence",
+    "Softmax confidence distribution of predictions.",
+    ("model_version",),
+    buckets=(0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99),
+)
+LOW_CONFIDENCE_PREDICTIONS = Counter(
+    "vehicle_classifier_low_confidence_predictions_total",
+    "Count of predictions with confidence below warning threshold.",
+    ("model_version",),
 )
 MODEL_INFO = Info("vehicle_classifier_model", "Identity of the loaded classifier model.")
 KNOWN_ENDPOINTS = {"/predict", "/health/live", "/health/ready"}
@@ -105,6 +125,8 @@ class PredictionResponse(BaseModel):
     predicted_index: int
     class_name: str
     model_sha256: str
+    confidence: float
+    probabilities: dict[str, float]
 
 
 class ErrorResponse(BaseModel):
@@ -167,7 +189,23 @@ class RequestBodyTooLarge(Exception):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    model_path = os.getenv("MODEL_PATH", "student_model.pth")
+    model_path = os.getenv("MODEL_PATH")
+    if not model_path:
+        champion_config = Path("configs/champion_model.yaml")
+        if champion_config.is_file():
+            try:
+                import yaml
+
+                champ = yaml.safe_load(champion_config.read_text(encoding="utf-8"))
+                champ_path = champ.get("artifact", {}).get("path")
+                if champ_path and Path(champ_path).is_file():
+                    model_path = champ_path
+            except Exception:
+                pass
+    if not model_path:
+        model_path = "student_model.pth"
+
+    setup_telemetry()
     metadata_path = os.getenv("MODEL_METADATA_PATH", f"{model_path}.json")
     package = validate_inference_package(model_path, metadata_path)
     # Strict state-dict loading uses the existing CPU predictor. The model factory
@@ -217,60 +255,106 @@ async def readiness(request: Request):
     },
     tags=["inference"],
 )
-async def predict(request: Request, file: UploadFile = File(...)):
-    try:
-        contents = bytearray()
-        while True:
-            chunk = await file.read(min(1024 * 1024, MAX_UPLOAD_BYTES + 1 - len(contents)))
-            if not chunk:
-                break
-            contents.extend(chunk)
-            if len(contents) > MAX_UPLOAD_BYTES:
-                raise HTTPException(status_code=413, detail=f"Image exceeds {MAX_UPLOAD_BYTES} byte limit")
-        if not contents:
-            raise HTTPException(status_code=400, detail="Uploaded image is empty")
+async def predict(request: Request, response: Response, file: UploadFile = File(...)):
+    extracted_context = extract_trace_context(request.headers)
+    with tracer.start_as_current_span("predict_request", context=extracted_context) as root_span:
+        trace_id = format_trace_id(root_span)
+        response.headers["X-Trace-ID"] = trace_id
+        root_span.set_attribute("http.method", request.method)
+        root_span.set_attribute("http.route", "/predict")
+        root_span.set_attribute("upload.filename", file.filename or "unknown")
+        root_span.set_attribute("upload.content_type", file.content_type or "unknown")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(io.BytesIO(contents)) as image:
-                if image.format not in ALLOWED_FORMATS:
-                    raise HTTPException(status_code=415, detail="Image must be JPEG, PNG, or WEBP")
-                if image.width * image.height > MAX_IMAGE_PIXELS:
-                    raise HTTPException(status_code=413, detail="Image dimensions exceed the pixel limit")
-                image.verify()
-        # Reopen verified bytes; predictor owns RGB conversion and preprocessing.
-        with Image.open(io.BytesIO(contents)) as image:
-            image.load()
-            rgb = image.convert("RGB")
-        model_version = getattr(request.app.state, "model_version", "unknown")
-        inference_started = time.perf_counter()
         try:
-            prediction = request.app.state.classifier.predict_image(rgb)
-        finally:
-            INFERENCE_DURATION.labels(model_version=model_version).observe(
-                time.perf_counter() - inference_started
-            )
-        PREDICTIONS.labels(
-            predicted_class=CLASS_IDX[prediction], model_version=model_version
-        ).inc()
-    except HTTPException:
-        raise
-    except (
-        UnidentifiedImageError,
-        OSError,
-        SyntaxError,
-        Image.DecompressionBombError,
-        Image.DecompressionBombWarning,
-    ) as exc:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid supported image") from exc
-    except InferenceError as exc:
-        logger.exception("Inference failed")
-        raise HTTPException(status_code=500, detail="Model inference failed") from exc
-    finally:
-        await file.close()
+            with tracer.start_as_current_span("read_upload_payload") as read_span:
+                contents = bytearray()
+                chunk_count = 0
+                while True:
+                    chunk = await file.read(min(1024 * 1024, MAX_UPLOAD_BYTES + 1 - len(contents)))
+                    if not chunk:
+                        break
+                    contents.extend(chunk)
+                    chunk_count += 1
+                    if len(contents) > MAX_UPLOAD_BYTES:
+                        read_span.set_attribute("payload.overflow", True)
+                        raise HTTPException(status_code=413, detail=f"Image exceeds {MAX_UPLOAD_BYTES} byte limit")
+                read_span.set_attribute("payload.bytes", len(contents))
+                read_span.set_attribute("payload.chunks", chunk_count)
 
-    return PredictionResponse(
-        predicted_index=prediction,
-        class_name=CLASS_IDX[prediction],
-        model_sha256=request.app.state.model_sha256,
-    )
+            if not contents:
+                raise HTTPException(status_code=400, detail="Uploaded image is empty")
+
+            with tracer.start_as_current_span("validate_and_decode_image") as decode_span:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", Image.DecompressionBombWarning)
+                    with Image.open(io.BytesIO(contents)) as image:
+                        if image.format not in ALLOWED_FORMATS:
+                            raise HTTPException(status_code=415, detail="Image must be JPEG, PNG, or WEBP")
+                        if image.width * image.height > MAX_IMAGE_PIXELS:
+                            raise HTTPException(status_code=413, detail="Image dimensions exceed the pixel limit")
+                        image.verify()
+                        decode_span.set_attribute("image.format", image.format)
+                        decode_span.set_attribute("image.width", image.width)
+                        decode_span.set_attribute("image.height", image.height)
+                        decode_span.set_attribute("image.pixels", image.width * image.height)
+
+            # Reopen verified bytes; predictor owns RGB conversion and preprocessing.
+            with tracer.start_as_current_span("convert_image_rgb"):
+                with Image.open(io.BytesIO(contents)) as image:
+                    image.load()
+                    rgb = image.convert("RGB")
+
+            model_version = getattr(request.app.state, "model_version", "unknown")
+            with tracer.start_as_current_span("model_inference") as infer_span:
+                infer_span.set_attribute("model.version", model_version)
+                infer_span.set_attribute("model.sha256", getattr(request.app.state, "model_sha256", "unknown"))
+                inference_started = time.perf_counter()
+                try:
+                    detailed = await asyncio.to_thread(
+                        request.app.state.classifier.predict_image_detailed, rgb
+                    )
+                finally:
+                    INFERENCE_DURATION.labels(model_version=model_version).observe(
+                        time.perf_counter() - inference_started
+                    )
+                infer_span.set_attribute("prediction.class_name", detailed["class_name"])
+                infer_span.set_attribute("prediction.confidence", detailed["confidence"])
+
+            PREDICTIONS.labels(
+                predicted_class=detailed["class_name"], model_version=model_version
+            ).inc()
+            confidence = float(detailed["confidence"])
+            PREDICTION_CONFIDENCE.labels(model_version=model_version).observe(confidence)
+            if confidence < 0.70:
+                LOW_CONFIDENCE_PREDICTIONS.labels(model_version=model_version).inc()
+
+            root_span.set_attribute("prediction.class_name", detailed["class_name"])
+            root_span.set_attribute("prediction.index", detailed["predicted_index"])
+            root_span.set_attribute("prediction.confidence", confidence)
+
+        except HTTPException as exc:
+            root_span.record_exception(exc)
+            raise
+        except (
+            UnidentifiedImageError,
+            OSError,
+            SyntaxError,
+            Image.DecompressionBombError,
+            Image.DecompressionBombWarning,
+        ) as exc:
+            root_span.record_exception(exc)
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid supported image") from exc
+        except InferenceError as exc:
+            root_span.record_exception(exc)
+            logger.exception("Inference failed")
+            raise HTTPException(status_code=500, detail="Model inference failed") from exc
+        finally:
+            await file.close()
+
+        return PredictionResponse(
+            predicted_index=detailed["predicted_index"],
+            class_name=detailed["class_name"],
+            model_sha256=request.app.state.model_sha256,
+            confidence=detailed["confidence"],
+            probabilities=detailed["probabilities"],
+        )

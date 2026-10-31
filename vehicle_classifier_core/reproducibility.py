@@ -1,5 +1,6 @@
 """Seed control and run environment metadata."""
 
+from __future__ import annotations
 import hashlib
 import json
 import logging
@@ -9,9 +10,10 @@ import random
 import subprocess
 import sys
 from pathlib import Path
-
-import torch
-
+try:
+    import torch
+except ImportError:
+    torch = None
 logger = logging.getLogger(__name__)
 
 
@@ -53,9 +55,13 @@ def seed_everything(seed: int, deterministic: bool = True) -> None:
 
 
 def resolve_device(configured: str = "auto") -> torch.device:
-    """Resolve auto/cpu/cuda, failing clearly for an unavailable explicit CUDA request."""
+    """Resolve auto/cpu/cuda/mps, failing clearly for an unavailable explicit request."""
     if configured == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
     device = torch.device(configured)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise RuntimeError(
@@ -63,6 +69,8 @@ def resolve_device(configured: str = "auto") -> torch.device:
             "Install a CUDA-enabled PyTorch build compatible with your GPU driver, "
             "or set device: cpu."
         )
+    if device.type == "mps" and not (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()):
+        raise RuntimeError("MPS was requested, but Apple Silicon MPS is not available.")
     return device
 
 

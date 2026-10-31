@@ -1,0 +1,30 @@
+model_name: VehicleClassifier
+version: '1'
+alias: champion
+promoted_at: '2026-10-31T10:07:45.053973+00:00'
+tracking_uri: https://dagshub.com/bhavsarnaitik4/Vehicle_classifier_bucket.mlflow
+run_id: 8099c25e7b824646828fc90baa1e3b01
+git_revision: 62b322e16ad81f55bcae8817d70fc138e9c9d54f
+source_snapshot_sha256: 3c69530a9cdc85a51b27afc6932d944d1b9f63ebcef816444f39ca0f5ee403fe
+data_version: manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a
+artifact:
+  path: student_model.pth
+  sha256: c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4
+  size_bytes: 2665366
+metrics:
+  accuracy: 0.9240000247955322
+  macro_f1: 0.9239610405408738
+  mean_latency_ms: 11.088352019999729
+quality_gate:
+  passed: true
+  gate_report: reports/model_gate.json
+  thresholds:
+    max_mean_latency_ms: 15.0
+    min_macro_f1: 0.88
+    min_per_class_recall:
+      '0': 0.85
+      '1': 0.88
+      '2': 0.85
+      '3': 0.9
+      '4': 0.9
+    minimum_accuracy_delta: -0.005

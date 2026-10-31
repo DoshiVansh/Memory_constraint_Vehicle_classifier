@@ -27,8 +27,31 @@ def _mlflow():
             "MLflow is required for experiment tracking. Install it with "
             "`python -m pip install -r requirements-mlflow.txt`."
         ) from exc
-    uri = os.environ.get("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+
+    # Auto-load .env if present so DagsHub and MLflow credentials are fully populated
+    try:
+        from dotenv import load_dotenv
+
+        env_file = Path(__file__).resolve().parent.parent / ".env"
+        if env_file.is_file():
+            load_dotenv(env_file)
+    except ImportError:
+        pass
+
+    # Ensure DagsHub auth credentials are mapped to MLflow HTTP client env vars
+    if "MLFLOW_TRACKING_USERNAME" not in os.environ and "DAGSHUB_USERNAME" in os.environ:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
+    if "MLFLOW_TRACKING_PASSWORD" not in os.environ and "DAGSHUB_TOKEN" in os.environ:
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+
+    # Fall back to DagsHub URL if DAGSHUB vars are set
+    default_uri = "sqlite:///mlflow.db"
+    if "DAGSHUB_USERNAME" in os.environ and "DAGSHUB_REPO_NAME" in os.environ:
+        default_uri = f"https://dagshub.com/{os.environ['DAGSHUB_USERNAME']}/{os.environ['DAGSHUB_REPO_NAME']}.mlflow"
+
+    uri = os.environ.get("MLFLOW_TRACKING_URI", default_uri)
     mlflow.set_tracking_uri(uri)
+    logger.info("Configured MLflow tracking URI: %s", uri)
     return mlflow
 
 
@@ -220,32 +243,53 @@ def tracked_evaluation(function):
             output = Path(config["output"])
             output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
             metric_values = {}
-            for key in ("accuracy", "elapsed_seconds", "mean_latency_ms"):
+            for key in (
+                "accuracy",
+                "macro_f1",
+                "macro_precision",
+                "macro_recall",
+                "weighted_f1",
+                "weighted_precision",
+                "weighted_recall",
+                "elapsed_seconds",
+                "mean_latency_ms",
+            ):
                 value = report.get(key)
                 if isinstance(value, (int, float)):
                     metric_values[key] = float(value)
             for subset in ("clean", "augmented"):
-                value = report.get(subset, {}).get("accuracy")
-                if isinstance(value, (int, float)):
-                    metric_values[f"{subset}_accuracy"] = float(value)
+                sub_rep = report.get(subset, {})
+                for metric in ("accuracy", "macro_f1", "weighted_f1"):
+                    val = sub_rep.get(metric)
+                    if isinstance(val, (int, float)):
+                        metric_values[f"{subset}_{metric}"] = float(val)
             for index, item in report.get("per_class", {}).items():
                 if item.get("accuracy") is not None:
                     metric_values[f"class_{index}_accuracy"] = float(item["accuracy"])
+                if item.get("precision") is not None:
+                    metric_values[f"class_{index}_precision"] = float(item["precision"])
+                if item.get("recall") is not None:
+                    metric_values[f"class_{index}_recall"] = float(item["recall"])
+                if item.get("f1_score") is not None:
+                    metric_values[f"class_{index}_f1"] = float(item["f1_score"])
             mlflow.log_metrics(metric_values)
             mlflow.log_dict(report, "evaluation.json")
             if checkpoint.is_file():
-                from .mlflow_model import VehicleClassifierPyfunc
+                try:
+                    from .mlflow_model import VehicleClassifierPyfunc
 
-                mlflow.pyfunc.log_model(
-                    name="model",
-                    python_model=VehicleClassifierPyfunc(),
-                    artifacts={"checkpoint": str(checkpoint.resolve())},
-                    code_paths=[str(Path(__file__).resolve().parent)],
-                    pip_requirements="requirements-mlflow-model.txt",
-                )
-                sidecar = Path(str(checkpoint) + ".json")
-                if sidecar.is_file():
-                    mlflow.log_artifact(str(sidecar), artifact_path="model_metadata")
+                    mlflow.pyfunc.log_model(
+                        name="model",
+                        python_model=VehicleClassifierPyfunc(),
+                        artifacts={"checkpoint": str(checkpoint.resolve())},
+                        code_paths=[str(Path(__file__).resolve().parent)],
+                        pip_requirements="requirements-mlflow-model.txt",
+                    )
+                    sidecar = Path(str(checkpoint) + ".json")
+                    if sidecar.is_file():
+                        mlflow.log_artifact(str(sidecar), artifact_path="model_metadata")
+                except Exception as model_err:
+                    logger.warning("Could not log model to MLflow: %s", model_err)
             mlflow.log_dict(report.get("confusion_matrix", []), "confusion_matrix.json")
             mlflow.log_artifact(str(output), artifact_path="reports")
             return report

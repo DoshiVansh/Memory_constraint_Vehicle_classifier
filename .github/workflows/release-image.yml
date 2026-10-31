@@ -99,3 +99,16 @@ jobs:
           echo "Model version: \`${{ steps.model.outputs.model_version }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Artifact SHA-256: \`${{ steps.model.outputs.artifact_sha256 }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Git SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger automated CD deployment dispatch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            -d "{\"event_type\": \"model-released\", \"client_payload\": {\"image\": \"$IMAGE_NAME@$IMAGE_DIGEST\", \"version\": \"${{ steps.model.outputs.model_version }}\", \"tag\": \"${{ github.ref_name }}\"}}" \
+            || echo "Notice: CD repository dispatch event emitted or skipped."

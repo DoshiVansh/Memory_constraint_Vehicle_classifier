@@ -9,7 +9,8 @@ pipeline {
     }
 
     parameters {
-        text(name: 'RELEASE_METADATA_JSON', defaultValue: '', description: 'Paste the complete release_metadata.json attached to the GHCR GitHub Release')
+        text(name: 'RELEASE_METADATA_JSON', defaultValue: '', description: 'Paste the complete release_metadata.json attached to the GHCR GitHub Release (optional if RELEASE_TAG is provided)')
+        string(name: 'RELEASE_TAG', defaultValue: '', description: 'GitHub Release tag (e.g. v1.0.0 or latest) to fetch metadata automatically')
     }
 
     environment {
@@ -28,7 +29,31 @@ pipeline {
     stages {
         stage('Validate release identity') {
             steps {
-                writeFile file: 'release_metadata.json', text: params.RELEASE_METADATA_JSON
+                script {
+                    if (params.RELEASE_METADATA_JSON?.trim()) {
+                        writeFile file: 'release_metadata.json', text: params.RELEASE_METADATA_JSON
+                    } else {
+                        def tag = params.RELEASE_TAG?.trim() ?: 'latest'
+                        sh """#!/bin/sh
+                            set -eu
+                            echo "Fetching release metadata automatically for tag '${tag}'..."
+                            if [ "${tag}" = "latest" ]; then
+                              RELEASE_URL="https://api.github.com/repos/\${GITHUB_REPOSITORY:-bhavsarnaitik4/Vehicle_classifier_bucket}/releases/latest"
+                            else
+                              RELEASE_URL="https://api.github.com/repos/\${GITHUB_REPOSITORY:-bhavsarnaitik4/Vehicle_classifier_bucket}/releases/tags/${tag}"
+                            fi
+                            if curl -fsSL -H "Accept: application/vnd.github.v3+json" "\$RELEASE_URL" 2>/dev/null | grep -o 'https://[^"]*release_metadata.json' | head -n 1 | xargs -r curl -fsSL -o release_metadata.json 2>/dev/null; then
+                              echo "Successfully downloaded release_metadata.json from GitHub Release."
+                            elif [ -f reports/release_metadata.json ]; then
+                              echo "Using local reports/release_metadata.json as fallback."
+                              cp reports/release_metadata.json release_metadata.json
+                            else
+                              echo "Error: No RELEASE_METADATA_JSON provided and could not fetch release_metadata.json for tag ${tag}." >&2
+                              exit 1
+                            fi
+                        """
+                    }
+                }
                 sh 'python3 scripts/validate_release_metadata.py release_metadata.json --output release-identity.env'
                 script {
                     def identity = readFile('release-identity.env').readLines().collectEntries { line ->
@@ -88,6 +113,9 @@ pipeline {
                     envsubst '${MODEL_VERSION} ${MODEL_SHA256} ${RELEASE_GIT_SHA}' < k8s/configmap.yaml.tpl | kubectl apply -f -
                     envsubst '${IMAGE_REF} ${MODEL_VERSION} ${RELEASE_GIT_SHA}' < k8s/deployment.yaml.tpl | kubectl apply -f -
                     kubectl apply -f k8s/service.yaml
+                    if [ -f k8s/hpa.yaml ]; then
+                      kubectl apply -f k8s/hpa.yaml
+                    fi
                     kubectl rollout status "deployment/$DEPLOYMENT_NAME" -n "$K8S_NAMESPACE" --timeout=4m
                     kubectl get deployment "$DEPLOYMENT_NAME" -n "$K8S_NAMESPACE" -o wide
                 '''

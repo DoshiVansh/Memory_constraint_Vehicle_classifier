@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vehicle-classifier-alertmanager-config
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-alertmanager
+    app.kubernetes.io/part-of: vehicle-classifier
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ["alertname", "job", "severity"]
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+      receiver: "mlops-notifications"
+      routes:
+        - match:
+            severity: warning
+          receiver: "mlops-notifications"
+          continue: false
+    receivers:
+      - name: "mlops-notifications"
+        webhook_configs:
+          - url: "http://127.0.0.1:5001/api/v1/alerts"
+            send_resolved: true
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vehicle-classifier-alertmanager-pvc
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-alertmanager
+    app.kubernetes.io/part-of: vehicle-classifier
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-classifier-alertmanager
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-alertmanager
+    app.kubernetes.io/part-of: vehicle-classifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vehicle-classifier-alertmanager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vehicle-classifier-alertmanager
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.28.0
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+          ports:
+            - name: http
+              containerPort: 9093
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager/alertmanager.yml
+              subPath: alertmanager.yml
+              readOnly: true
+            - name: data
+              mountPath: /alertmanager
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: vehicle-classifier-alertmanager-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: vehicle-classifier-alertmanager-pvc
+        - name: tmp
+          emptyDir:
+            sizeLimit: 16Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vehicle-classifier-alertmanager
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-alertmanager
+    app.kubernetes.io/part-of: vehicle-classifier
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: vehicle-classifier-alertmanager
+  ports:
+    - name: http
+      port: 9093
+      targetPort: http

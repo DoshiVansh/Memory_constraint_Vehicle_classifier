@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: vehicle-classifier-api
     app.kubernetes.io/part-of: vehicle-classifier
 spec:
-  replicas: 1
+  replicas: 2
   revisionHistoryLimit: 5
   progressDeadlineSeconds: 180
   strategy:

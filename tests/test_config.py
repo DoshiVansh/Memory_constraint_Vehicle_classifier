@@ -19,6 +19,8 @@ def test_auto_device_falls_back_to_cpu_without_cuda(monkeypatch):
     import torch
 
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    if hasattr(torch.backends, "mps"):
+        monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
     assert str(resolve_device("auto")) == "cpu"
 
 

@@ -675,7 +675,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 1,
+      "distance": 0,
       "locations": [
         "target:Bus/clean_0030.jpg",
         "training:0_Bus/Bus_2802.JPEG"
@@ -811,7 +811,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 0,
+      "distance": 1,
       "locations": [
         "target:Bus/clean_0051.jpg",
         "training:0_Bus/Bus_0244.JPEG"
@@ -883,7 +883,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 2,
+      "distance": 1,
       "locations": [
         "target:Bus/clean_0064.jpg",
         "training:0_Bus/Bus_0871.JPEG"
@@ -891,7 +891,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 2,
+      "distance": 4,
       "locations": [
         "target:Bus/clean_0064.jpg",
         "training:0_Bus/Bus_2252.JPEG"
@@ -947,7 +947,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 1,
+      "distance": 2,
       "locations": [
         "target:Bus/clean_0072.jpg",
         "training:0_Bus/Bus_2154.JPEG"
@@ -1059,7 +1059,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 1,
+      "distance": 0,
       "locations": [
         "target:Bus/clean_0091.jpg",
         "training:0_Bus/Bus_3861.JPEG"
@@ -1339,7 +1339,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 0,
+      "distance": 1,
       "locations": [
         "target:Bus/clean_0137.jpg",
         "training:0_Bus/Bus_0164.JPEG"
@@ -1515,7 +1515,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 0,
+      "distance": 1,
       "locations": [
         "target:Bus/clean_0160.jpg",
         "training:0_Bus/Bus_2176.JPEG"
@@ -1611,7 +1611,7 @@
       "type": "possible_near_duplicate"
     },
     {
-      "distance": 1,
+      "distance": 0,
       "locations": [
         "target:Bus/clean_0174.jpg",
         "training:0_Bus/Bus_1604.JPEG"

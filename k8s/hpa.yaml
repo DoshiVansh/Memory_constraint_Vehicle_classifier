@@ -1,0 +1,22 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vehicle-classifier-api-hpa
+  namespace: vehicle-classifier-staging
+  labels:
+    app.kubernetes.io/name: vehicle-classifier-api
+    app.kubernetes.io/part-of: vehicle-classifier
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vehicle-classifier-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

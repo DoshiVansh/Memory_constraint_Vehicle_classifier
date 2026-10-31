@@ -1,12 +1,16 @@
 """Model definitions and architecture factories."""
 
-from torch import nn
-from torchvision.models import shufflenet_v2_x1_0
-
 CLASS_IDX = {0: "Bus", 1: "Truck", 2: "Car", 3: "Bike", 4: "None"}
 
+try:
+    from torch import nn
+    from torchvision.models import shufflenet_v2_x1_0
+except ImportError:
+    nn = None
+    shufflenet_v2_x1_0 = None
 
-class StudentShuffleNet(nn.Module):
+
+class StudentShuffleNet(nn.Module if nn is not None else object):
     """ShuffleNet V2 x1.0 student with the project's five-class head."""
 
     def __init__(self, num_classes: int = len(CLASS_IDX)) -> None:

@@ -48,3 +48,6 @@ jobs:
           OMP_NUM_THREADS: "1"
           MKL_NUM_THREADS: "1"
         run: python -m pytest -q
+
+      - name: Enforce model quality gate on candidate report
+        run: python scripts/model_gate.py --evaluation reports/evaluation.json --baseline reports/baseline.json

@@ -23,6 +23,8 @@ api = [
   "uvicorn==0.34.2",
   "python-multipart==0.0.20",
   "prometheus-client==0.26.0",
+  "opentelemetry-api>=1.20.0",
+  "opentelemetry-sdk>=1.20.0",
 ]
 
 [tool.setuptools]
@@ -31,6 +33,7 @@ py-modules = ["vehicle_classifier"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-ra"
 
 [tool.ruff]

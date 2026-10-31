@@ -33,4 +33,11 @@ def test_classification_report_uses_true_rows_and_prediction_columns():
 
     assert result["accuracy"] == 0.75
     assert result["confusion_matrix"] == [[1, 1, 0], [0, 1, 0], [0, 0, 1]]
-    assert result["per_class"]["0"] == {"support": 2, "correct": 1, "accuracy": 0.5}
+    assert result["per_class"]["0"]["support"] == 2
+    assert result["per_class"]["0"]["correct"] == 1
+    assert result["per_class"]["0"]["accuracy"] == 0.5
+    assert result["per_class"]["0"]["precision"] == 1.0
+    assert result["per_class"]["0"]["recall"] == 0.5
+    assert round(result["per_class"]["0"]["f1_score"], 4) == round(2 / 3, 4)
+    assert round(result["macro_f1"], 4) == round(7 / 9, 4)
+    assert result["weighted_f1"] == 0.75

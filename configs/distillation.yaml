@@ -22,7 +22,7 @@ augmentation:
   random_erasing_ratio: [0.3, 3.3]
 training:
   batch_size: 64
-  epochs: 20
+  epochs: 1
   learning_rate: 0.0003
   temperature: 4.0
   alpha: 0.5

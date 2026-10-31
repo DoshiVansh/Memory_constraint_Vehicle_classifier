@@ -58,6 +58,8 @@ def main():
     prediction = json.loads(body)
     assert prediction["predicted_index"] in range(5), prediction
     assert prediction["class_name"] in {"Bus", "Truck", "Car", "Bike", "None"}, prediction
+    assert "confidence" in prediction and 0.0 <= prediction["confidence"] <= 1.0, prediction
+    assert "probabilities" in prediction and len(prediction["probabilities"]) == 5, prediction
 
     malformed = (
         f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"bad.png\"\r\n"

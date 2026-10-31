@@ -1,3 +1,7 @@
+# DEPRECATED: This script has been superseded by scripts/ingest_data.py (DVC Stage 0).
+# It is kept for historical reference only. Do NOT run it directly — it has no shared
+# exclusion list with build_test_data.py and can cause train/test raw-source overlap.
+# Use:  dvc repro ingest_data
 import os
 import shutil
 import random

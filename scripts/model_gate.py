@@ -4,6 +4,10 @@
 import argparse
 import json
 from pathlib import Path
+import sys
+
+# Ensure repository root is on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vehicle_classifier_core.model_gate import evaluate_model_gate
 

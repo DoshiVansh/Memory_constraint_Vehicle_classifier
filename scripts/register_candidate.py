@@ -5,6 +5,10 @@ import argparse
 import json
 import os
 from pathlib import Path
+import sys
+
+# Ensure repository root is on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vehicle_classifier_core.model_gate import evaluate_model_gate
 
@@ -24,10 +28,26 @@ def main():
         print("; ".join(gate["reasons"]))
         raise SystemExit(1)
 
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
+
+    if "MLFLOW_TRACKING_USERNAME" not in os.environ and "DAGSHUB_USERNAME" in os.environ:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
+    if "MLFLOW_TRACKING_PASSWORD" not in os.environ and "DAGSHUB_TOKEN" in os.environ:
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+
     import mlflow
     from mlflow import MlflowClient
 
-    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+    default_uri = "sqlite:///mlflow.db"
+    if "DAGSHUB_USERNAME" in os.environ and "DAGSHUB_REPO_NAME" in os.environ:
+        default_uri = f"https://dagshub.com/{os.environ['DAGSHUB_USERNAME']}/{os.environ['DAGSHUB_REPO_NAME']}.mlflow"
+
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", default_uri)
     mlflow.set_tracking_uri(tracking_uri)
     run_id = gate["evaluation"]["mlflow_run_id"]
     version = mlflow.register_model(f"runs:/{run_id}/model", args.model_name)

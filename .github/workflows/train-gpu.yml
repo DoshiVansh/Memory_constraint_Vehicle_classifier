@@ -29,10 +29,14 @@ jobs:
       run:
         working-directory: training-src
     env:
-      DVC_ENDPOINT_URL: ${{ vars.DVC_ENDPOINT_URL }}
-      DVC_ACCESS_KEY: ${{ secrets.DVC_ACCESS_KEY }}
-      DVC_SECRET_KEY: ${{ secrets.DVC_SECRET_KEY }}
-      MLFLOW_TRACKING_URI: sqlite:///mlflow.db
+      # ── DagsHub DVC Remote ────────────────────────────────────────────────
+      DAGSHUB_USERNAME: ${{ vars.DAGSHUB_USERNAME }}
+      DAGSHUB_REPO_NAME: ${{ vars.DAGSHUB_REPO_NAME }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+      # ── DagsHub Hosted MLflow (centralised experiment tracking) ───────────
+      MLFLOW_TRACKING_URI: https://dagshub.com/${{ vars.DAGSHUB_USERNAME }}/${{ vars.DAGSHUB_REPO_NAME }}.mlflow
+      MLFLOW_TRACKING_USERNAME: ${{ vars.DAGSHUB_USERNAME }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
       MLFLOW_EXPERIMENT_NAME: VehicleClassifier
     steps:
       - name: Check out source in an isolated runner directory
@@ -69,22 +73,18 @@ jobs:
           nvidia-smi
           python -c "import torch; assert torch.cuda.is_available(), 'CUDA unavailable to PyTorch'; print(torch.cuda.get_device_name(0), torch.version.cuda)"
 
-      - name: Configure DVC remote credentials
+      - name: Configure DVC remote credentials (DagsHub)
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$DVC_ENDPOINT_URL" || -z "$DVC_ACCESS_KEY" || -z "$DVC_SECRET_KEY" ]]; then
-            echo "Configure Actions variable DVC_ENDPOINT_URL and secrets DVC_ACCESS_KEY / DVC_SECRET_KEY." >&2
+          if [[ -z "${DAGSHUB_USERNAME:-}" || -z "${DAGSHUB_REPO_NAME:-}" || -z "${DAGSHUB_TOKEN:-}" ]]; then
+            echo "Set Actions variables DAGSHUB_USERNAME, DAGSHUB_REPO_NAME and secret DAGSHUB_TOKEN." >&2
             exit 1
           fi
-          dvc remote modify --local storage endpointurl "$DVC_ENDPOINT_URL"
-          dvc remote modify --local storage access_key_id "$DVC_ACCESS_KEY"
-          dvc remote modify --local storage secret_access_key "$DVC_SECRET_KEY"
-          if [[ "$DVC_ENDPOINT_URL" == https://* ]]; then
-            dvc remote modify --local storage use_ssl true
-          else
-            dvc remote modify --local storage use_ssl false
-          fi
+          DAGSHUB_ENDPOINT="https://dagshub.com/${DAGSHUB_USERNAME}/${DAGSHUB_REPO_NAME}.s3"
+          dvc remote modify --local storage endpointurl "${DAGSHUB_ENDPOINT}"
+          dvc remote modify --local storage access_key_id "${DAGSHUB_TOKEN}"
+          dvc remote modify --local storage secret_access_key "${DAGSHUB_TOKEN}"
 
       - name: Pull versioned datasets
         run: dvc pull vehicle_dataset.dvc test_dataset.dvc test_MIO_TCD_data.dvc
@@ -110,5 +110,4 @@ jobs:
             training-src/reports/distillation_run.json
             training-src/reports/evaluation.json
             training-src/reports/ood_evaluation.json
-            training-src/mlflow.db
-            training-src/mlartifacts/
+          # Note: MLflow runs & artifacts now live on DagsHub — no local mlflow.db to upload.
