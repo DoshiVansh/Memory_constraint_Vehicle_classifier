@@ -116,9 +116,20 @@ def generate_dashboard() -> dict:
                 "title": "Vehicle Class Predictions Distribution",
                 "gridPos": {"h": 8, "w": 7, "x": 10, "y": 4},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "sum by (predicted_class) (increase(vehicle_classifier_predictions_total[15m]))", "legendFormat": "{{predicted_class}}"}],
+                "targets": [
+                    {
+                        "refId": "A",
+                        "expr": "sum by (predicted_class) (increase(vehicle_classifier_predictions_total[15m]))",
+                        "legendFormat": "{{predicted_class}}",
+                        "instant": True
+                    }
+                ],
                 "fieldConfig": {"defaults": {"unit": "short"}},
-                "options": {"pieType": "donut", "reduceOptions": {"calcs": ["lastNotNull"], "values": True}, "legend": {"displayMode": "table", "values": ["percent", "value"]}}
+                "options": {
+                    "pieType": "donut",
+                    "reduceOptions": {"calcs": ["lastNotNull"], "values": False},
+                    "legend": {"displayMode": "table", "values": ["percent", "value"]}
+                }
             },
             {
                 "id": 9,
