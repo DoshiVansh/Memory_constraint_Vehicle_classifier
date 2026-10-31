@@ -53,9 +53,7 @@ jobs:
         run: |
           if [ -n "$KUBE_CONFIG_DATA" ]; then
             echo "Cloud Kubernetes credentials detected. Deploying to live cluster..."
-            mkdir -p ~/.kube
-            echo "$KUBE_CONFIG_DATA" | base64 --decode > ~/.kube/config
-            chmod 600 ~/.kube/config
+            python scripts/setup_kubeconfig.py
             
             # Load release environment if available
             if [ -f release-identity.env ]; then

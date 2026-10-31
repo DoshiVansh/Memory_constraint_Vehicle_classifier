@@ -121,6 +121,9 @@ jobs:
     name: Deploy to Cloud Kubernetes (AKS)
     needs: publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v7
@@ -134,9 +137,7 @@ jobs:
         run: |
           if [ -n "$KUBE_CONFIG_DATA" ]; then
             echo "Cloud Kubernetes credentials detected. Deploying to live cluster..."
-            mkdir -p ~/.kube
-            echo "$KUBE_CONFIG_DATA" | base64 --decode > ~/.kube/config
-            chmod 600 ~/.kube/config
+            python scripts/setup_kubeconfig.py
             
             export MODEL_VERSION="${MODEL_VERSION:-1}"
             export RELEASE_GIT_SHA="${GITHUB_SHA:-manual}"
