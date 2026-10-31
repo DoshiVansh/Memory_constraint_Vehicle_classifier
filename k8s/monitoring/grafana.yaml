@@ -142,7 +142,7 @@ metadata:
   labels:
     app.kubernetes.io/name: vehicle-classifier-grafana
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app.kubernetes.io/name: vehicle-classifier-grafana
   ports:
