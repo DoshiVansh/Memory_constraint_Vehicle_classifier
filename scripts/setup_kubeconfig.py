@@ -27,6 +27,9 @@ def setup_kubeconfig() -> None:
         try:
             # Python's base64 ignores standard whitespace, but remove internal newlines/carriage returns
             clean_b64 = "".join(raw_data.split())
+            missing_padding = len(clean_b64) % 4
+            if missing_padding:
+                clean_b64 += "=" * (4 - missing_padding)
             content = base64.b64decode(clean_b64, validate=False)
         except Exception as exc:
             raise ValueError(f"Failed to decode KUBE_CONFIG_DATA as base64: {exc}") from exc
