@@ -13,16 +13,18 @@ from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 from prometheus_client import Counter, Gauge, Histogram, Info, make_asgi_app
-from starlette.responses import JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse
 
 from .artifact_validation import validate_inference_package
 from .predictor import InferenceError, VehicleClassifier
 from .telemetry import (
     extract_trace_context,
     format_trace_id,
+    get_trace_store,
     get_tracer,
     setup_telemetry,
 )
+from .trace_dashboard_html import TRACE_DASHBOARD_HTML
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer()
@@ -77,8 +79,8 @@ LOW_CONFIDENCE_PREDICTIONS = Counter(
     ("model_version",),
 )
 MODEL_INFO = Info("vehicle_classifier_model", "Identity of the loaded classifier model.")
-KNOWN_ENDPOINTS = {"/predict", "/health/live", "/health/ready"}
-IGNORED_METRIC_PATHS = {"/metrics", "/health/live", "/health/ready"}
+KNOWN_ENDPOINTS = {"/predict", "/health/live", "/health/ready", "/traces", "/api/traces"}
+IGNORED_METRIC_PATHS = {"/metrics", "/health/live", "/health/ready", "/traces", "/api/traces"}
 
 
 class PrometheusMetricsMiddleware:
@@ -241,6 +243,30 @@ async def readiness(request: Request):
     if getattr(request.app.state, "classifier", None) is None:
         raise HTTPException(status_code=503, detail="Model package is not ready")
     return {"status": "ready", "model_sha256": request.app.state.model_sha256}
+
+
+@app.get("/api/traces", tags=["telemetry"])
+async def get_recent_traces_endpoint(limit: int = 50):
+    """Retrieve recent OpenTelemetry traces captured by the inference service."""
+    store = get_trace_store()
+    traces = store.get_recent_traces(limit=limit)
+    return {"total": len(traces), "traces": traces}
+
+
+@app.get("/api/traces/{trace_id}", tags=["telemetry"])
+async def get_trace_by_id_endpoint(trace_id: str):
+    """Retrieve detailed span hierarchy and function timing for a specific trace."""
+    store = get_trace_store()
+    trace_data = store.get_trace(trace_id)
+    if not trace_data:
+        raise HTTPException(status_code=404, detail="Trace ID not found")
+    return trace_data
+
+
+@app.get("/traces", response_class=HTMLResponse, tags=["telemetry"])
+async def traces_dashboard_ui():
+    """Interactive OpenTelemetry Trace Waterfall and Function Call Explorer."""
+    return HTMLResponse(content=TRACE_DASHBOARD_HTML)
 
 
 @app.post(

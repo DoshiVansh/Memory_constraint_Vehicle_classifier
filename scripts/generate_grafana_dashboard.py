@@ -23,9 +23,9 @@ def generate_dashboard() -> dict:
                 "title": "Total Inferences Served",
                 "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_requests_total{endpoint=\"/predict\"}) or vector(0)"}],
+                "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_requests_total{endpoint=\"/predict\"})", "instant": True}],
                 "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}},
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "area", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
             {
                 "id": 2,
@@ -33,14 +33,14 @@ def generate_dashboard() -> dict:
                 "title": "Prediction Throughput",
                 "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m])) or vector(0)"}],
+                "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m]))", "instant": True}],
                 "fieldConfig": {
                     "defaults": {
                         "unit": "reqps",
                         "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": None}, {"color": "green", "value": 0.5}, {"color": "yellow", "value": 10}]}
                     }
                 },
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "area", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
             {
                 "id": 3,
@@ -48,14 +48,14 @@ def generate_dashboard() -> dict:
                 "title": "p95 Latency SLA",
                 "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "1000 * (histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m]))) or vector(0.018))"}],
+                "targets": [{"refId": "A", "expr": "1000 * histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))", "instant": True}],
                 "fieldConfig": {
                     "defaults": {
                         "unit": "ms",
                         "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "yellow", "value": 25}, {"color": "red", "value": 35}]}
                     }
                 },
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "area", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
             {
                 "id": 4,
@@ -63,14 +63,20 @@ def generate_dashboard() -> dict:
                 "title": "HTTP Success Rate",
                 "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "100 - (100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.0001))"}],
+                "targets": [
+                    {
+                        "refId": "A",
+                        "expr": "(1 - (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.001)) * 100",
+                        "instant": True
+                    }
+                ],
                 "fieldConfig": {
                     "defaults": {
                         "unit": "percent",
                         "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": None}, {"color": "yellow", "value": 90}, {"color": "green", "value": 95}]}
                     }
                 },
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "area", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
             {
                 "id": 5,
@@ -78,9 +84,9 @@ def generate_dashboard() -> dict:
                 "title": "Active API Replicas",
                 "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "count(up{job=\"vehicle-classifier-api\"} == 1) or vector(2)"}],
+                "targets": [{"refId": "A", "expr": "count(up{job=\"vehicle-classifier-api\"} == 1)", "instant": True}],
                 "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "yellow", "value": None}, {"color": "green", "value": 2}]}}},
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "none", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
             {
                 "id": 6,
@@ -88,9 +94,9 @@ def generate_dashboard() -> dict:
                 "title": "Champion Model",
                 "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "count(vehicle_classifier_model_info) or vector(1)"}],
+                "targets": [{"refId": "A", "expr": "count(vehicle_classifier_model_info)", "instant": True}],
                 "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "purple", "value": None}]}}},
-                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "graphMode": "none", "textMode": "auto"}
+                "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False}, "graphMode": "none", "textMode": "auto"}
             },
 
             # --- ROW 2: TRAFFIC & PREDICTIONS BREAKDOWN ---
@@ -100,7 +106,7 @@ def generate_dashboard() -> dict:
                 "title": "Prediction Request Rate (Throughput)",
                 "gridPos": {"h": 8, "w": 10, "x": 0, "y": 4},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[30s]))", "legendFormat": "Total req/sec"}],
+                "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m]))", "legendFormat": "Total req/sec"}],
                 "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"fillOpacity": 30, "gradientMode": "opacity", "lineWidth": 2}}},
                 "options": {"legend": {"showLegend": True, "displayMode": "table", "calcs": ["mean", "max", "lastNotNull"]}}
             },
@@ -182,7 +188,7 @@ def generate_dashboard() -> dict:
                 "title": "Active In-Flight Requests",
                 "gridPos": {"h": 7, "w": 6, "x": 12, "y": 20},
                 "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"},
-                "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_in_progress_requests) or vector(0)"}],
+                "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_in_progress_requests) or vector(0)", "instant": True}],
                 "fieldConfig": {
                     "defaults": {
                         "unit": "short",
@@ -208,28 +214,31 @@ def generate_dashboard() -> dict:
             {
                 "id": 16,
                 "type": "text",
-                "title": "OpenTelemetry Distributed Tracing & Span Lifecycle",
-                "gridPos": {"h": 8, "w": 24, "x": 0, "y": 27},
+                "title": "🔬 OpenTelemetry Distributed Tracing & Execution Waterfall",
+                "gridPos": {"h": 9, "w": 24, "x": 0, "y": 27},
                 "options": {
                     "mode": "markdown",
                     "content": (
-                        "### OpenTelemetry Distributed Request Tracing & Context Propagation\n\n"
-                        "Every incoming request to the Vehicle Classifier API triggers an **end-to-end distributed trace** adhering to the **W3C Trace Context** specification:\n\n"
-                        "- **Root Span**: `predict_request`\n"
-                        "  - `read_upload_payload`: multipart bytes validation and memory buffering\n"
-                        "  - `validate_and_decode_image`: image verification, format decoding\n"
-                        "  - `convert_image_rgb`: tensor color transformation\n"
-                        "  - `model_inference` -> `pytorch_forward_pass`: ShuffleNet V2 forward computation\n\n"
-                        "#### Live Trace Context Verification\n"
-                        "- **Response Header Injection**: Every API response contains `X-Trace-ID: <32-hex-trace-id>`.\n"
-                        "- **Live Cluster Trace Stream**:\n"
-                        "  ```bash\n"
-                        "  kubectl logs -l app.kubernetes.io/name=vehicle-classifier-traffic-generator -n vehicle-classifier-staging --tail=10\n"
-                        "  ```\n"
-                        "- **Direct Endpoint Testing**:\n"
-                        "  ```bash\n"
-                        "  curl -i -X POST \"http://20.200.237.154:8000/predict\" -F \"file=@test_dataset/Car/aug_0158.jpg\"\n"
-                        "  ```\n"
+                        "# 🔬 Live Distributed Tracing & Span Waterfall Dashboard\n\n"
+                        "To select individual request threads and inspect the exact API calls, child functions, microsecond latencies, and span attributes:\n\n"
+                        "### 🚀 [Open Interactive Tracing Waterfall UI (http://20.200.237.154:8000/traces)](http://20.200.237.154:8000/traces)\n"
+                        "**JSON Traces Endpoint**: [`/api/traces`](http://20.200.237.154:8000/api/traces) | "
+                        "**Interactive Swagger Docs**: [`/docs`](http://20.200.237.154:8000/docs)\n\n"
+                        "---\n\n"
+                        "### 📊 Execution Waterfall & Function Call Hierarchy\n"
+                        "```\n"
+                        "predict_request (HTTP POST /predict - Root Span)\n"
+                        "  ├── [01] read_upload_payload          : validates multipart byte streams, buffers memory\n"
+                        "  ├── [02] validate_and_decode_image    : image format safety checks, PIL decompression\n"
+                        "  ├── [03] convert_image_rgb            : transforms RGBA/Grayscale to RGB tensor\n"
+                        "  └── [04] model_inference              : normalizes tensor & executes neural model\n"
+                        "        └── [05] pytorch_forward_pass   : ShuffleNet V2 forward graph computation\n"
+                        "```\n\n"
+                        "#### ✨ Features of the Traces Dashboard:\n"
+                        "- **Thread / Request Selector**: Click any request on the left sidebar to load its complete trace.\n"
+                        "- **Gantt Waterfall Timeline**: Visually inspect relative timing and parallel overhead of every sub-function.\n"
+                        "- **Span Inspector Card**: Click any span to see microsecond duration, parent/child IDs, `image.format`, `image.size_bytes`, `prediction.class`, `prediction.confidence`, and `thread.id`.\n"
+                        "- **Real-time Live Stream**: Auto-polls every 3 seconds to capture fresh traffic from the in-cluster traffic generator."
                     )
                 }
             }

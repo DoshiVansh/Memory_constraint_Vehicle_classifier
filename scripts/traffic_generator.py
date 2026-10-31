@@ -161,7 +161,7 @@ def send_invalid_request() -> None:
 def ping_health() -> None:
     try:
         req = urllib.request.Request(TARGET_HEALTH_URL)
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
+        with urllib.request.urlopen(req, timeout=3.0):
             pass
     except Exception:
         pass

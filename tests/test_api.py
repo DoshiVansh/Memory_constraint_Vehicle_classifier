@@ -47,6 +47,23 @@ def test_api_contract_health_prediction_and_rejections(monkeypatch):
                 assert "vehicle_classifier_prediction_confidence" in metrics_text
                 assert "vehicle_classifier_predictions_total" in metrics_text
 
+                # Test OpenTelemetry trace endpoints
+                traces_resp = await client.get("/api/traces")
+                assert traces_resp.status_code == 200
+                traces_data = traces_resp.json()
+                assert "traces" in traces_data
+                assert len(traces_data["traces"]) > 0
+                sample_trace_id = traces_data["traces"][0]["trace_id"]
+
+                single_trace = await client.get(f"/api/traces/{sample_trace_id}")
+                assert single_trace.status_code == 200
+                assert single_trace.json()["trace_id"] == sample_trace_id
+                assert "spans" in single_trace.json()
+
+                html_resp = await client.get("/traces")
+                assert html_resp.status_code == 200
+                assert "Distributed Tracing" in html_resp.text
+
                 malformed = await client.post(
                     "/predict", files={"file": ("bad.png", b"not an image", "image/png")}
                 )
