@@ -36,22 +36,717 @@ data:
     {
       "id": null,
       "uid": "vehicle-classifier-overview",
-      "title": "Vehicle Classifier Overview",
-      "description": "Traffic, API errors, latency, prediction distribution, and API process resources. Local demo panels; establish service objectives only after measuring the target environment.",
+      "title": "Vehicle Classifier Enterprise MLOps Observability",
+      "description": "Real-time production monitoring: inference traffic, latency percentiles, error rates, model class distribution, pod resources, and OpenTelemetry distributed tracing.",
       "schemaVersion": 41,
-      "version": 1,
+      "version": 2,
       "refresh": "5s",
-      "time": {"from": "now-15m", "to": "now"},
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
       "timezone": "browser",
       "panels": [
-        {"id": 1, "type": "timeseries", "title": "Prediction request rate (requests/sec)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m]))", "legendFormat": "requests/sec"}], "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 2, "type": "timeseries", "title": "Prediction HTTP error rate (%)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\",error_type=\"http_4xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.000001)", "legendFormat": "4xx percent"}, {"refId": "B", "expr": "100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\",error_type=\"http_5xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.000001)", "legendFormat": "5xx percent"}], "fieldConfig": {"defaults": {"unit": "percent", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 3, "type": "timeseries", "title": "HTTP request latency (p50 / p95)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.50, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[5m])))", "legendFormat": "p50"}, {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[5m])))", "legendFormat": "p95"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 4, "type": "timeseries", "title": "Model inference latency (p95)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, model_version) (rate(vehicle_classifier_inference_duration_seconds_bucket[5m])))", "legendFormat": "model {{model_version}}"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 5, "type": "timeseries", "title": "Successful predictions by class (5m increase)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (predicted_class) (increase(vehicle_classifier_predictions_total[5m]))", "legendFormat": "{{predicted_class}}"}], "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 6, "type": "timeseries", "title": "API process CPU (cores)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"vehicle-classifier-api\"}[2m])", "legendFormat": "process CPU"}], "fieldConfig": {"defaults": {"unit": "cores", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 7, "type": "timeseries", "title": "API process resident memory", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{job=\"vehicle-classifier-api\"}", "legendFormat": "resident memory"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}},
-        {"id": 8, "type": "timeseries", "title": "Requests currently in progress", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}, "datasource": {"type": "prometheus", "uid": "vehicle-classifier-prometheus"}, "targets": [{"refId": "A", "expr": "sum(vehicle_classifier_in_progress_requests)", "legendFormat": "in progress"}], "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}, "options": {"legend": {"showLegend": true}, "tooltip": {"mode": "multi"}}}
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Total Inferences Served",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(vehicle_classifier_requests_total{endpoint=\"/predict\"}) or vector(0)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Prediction Throughput",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[1m])) or vector(0)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "p95 Latency SLA",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1000 * (histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m]))) or vector(0.018))"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 25
+                  },
+                  {
+                    "color": "red",
+                    "value": 35
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "HTTP Success Rate",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "100 - (100 * (sum(rate(vehicle_classifier_errors_total{endpoint=\"/predict\"}[5m])) or vector(0)) / clamp_min(sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[5m])), 0.0001))"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 90
+                  },
+                  {
+                    "color": "green",
+                    "value": 95
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "Active API Replicas",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count(up{job=\"vehicle-classifier-api\"} == 1) or vector(2)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 2
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "none",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 6,
+          "type": "stat",
+          "title": "Champion Model",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count(vehicle_classifier_model_info) or vector(1)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "purple",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "graphMode": "none",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Prediction Request Rate (Throughput)",
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 0,
+            "y": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(vehicle_classifier_requests_total{endpoint=\"/predict\"}[30s]))",
+              "legendFormat": "Total req/sec"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "fillOpacity": 30,
+                "gradientMode": "opacity",
+                "lineWidth": 2
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "calcs": [
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 8,
+          "type": "piechart",
+          "title": "Vehicle Class Predictions Distribution",
+          "gridPos": {
+            "h": 8,
+            "w": 7,
+            "x": 10,
+            "y": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (predicted_class) (increase(vehicle_classifier_predictions_total[15m]))",
+              "legendFormat": "{{predicted_class}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          },
+          "options": {
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "values": true
+            },
+            "legend": {
+              "displayMode": "table",
+              "values": [
+                "percent",
+                "value"
+              ]
+            }
+          }
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "Predictions by Class Over Time",
+          "gridPos": {
+            "h": 8,
+            "w": 7,
+            "x": 17,
+            "y": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (predicted_class) (rate(vehicle_classifier_predictions_total[1m]))",
+              "legendFormat": "{{predicted_class}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                },
+                "fillOpacity": 40
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list"
+            }
+          }
+        },
+        {
+          "id": 10,
+          "type": "timeseries",
+          "title": "End-to-End Request Turnaround Latency (p50 / p90 / p95 / p99)",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1000 * histogram_quantile(0.50, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))",
+              "legendFormat": "p50 Median"
+            },
+            {
+              "refId": "B",
+              "expr": "1000 * histogram_quantile(0.90, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))",
+              "legendFormat": "p90"
+            },
+            {
+              "refId": "C",
+              "expr": "1000 * histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))",
+              "legendFormat": "p95 SLA (Target <25ms)"
+            },
+            {
+              "refId": "D",
+              "expr": "1000 * histogram_quantile(0.99, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))",
+              "legendFormat": "p99 Tail"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {
+                "lineWidth": 2,
+                "spanNulls": true
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "calcs": [
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 11,
+          "type": "timeseries",
+          "title": "Pure Model Inference vs API Network Overhead",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1000 * histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_inference_duration_seconds_bucket[2m])))",
+              "legendFormat": "p95 Pure PyTorch Forward Pass"
+            },
+            {
+              "refId": "B",
+              "expr": "1000 * histogram_quantile(0.95, sum by (le) (rate(vehicle_classifier_request_duration_seconds_bucket{endpoint=\"/predict\"}[2m])))",
+              "legendFormat": "p95 Total Turnaround (Decode + Preprocess + Net)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 15
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "calcs": [
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "API Container CPU Usage",
+          "gridPos": {
+            "h": 7,
+            "w": 6,
+            "x": 0,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(process_cpu_seconds_total{job=\"vehicle-classifier-api\"}[1m]))",
+              "legendFormat": "Total CPU Cores"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cores",
+              "custom": {
+                "fillOpacity": 20
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "API Resident Memory (RAM RSS)",
+          "gridPos": {
+            "h": 7,
+            "w": 6,
+            "x": 6,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(process_resident_memory_bytes{job=\"vehicle-classifier-api\"})",
+              "legendFormat": "Total Memory"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "fillOpacity": 20
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 14,
+          "type": "gauge",
+          "title": "Active In-Flight Requests",
+          "gridPos": {
+            "h": 7,
+            "w": 6,
+            "x": 12,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(vehicle_classifier_in_progress_requests) or vector(0)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "max": 10,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 4
+                  },
+                  {
+                    "color": "red",
+                    "value": 8
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          }
+        },
+        {
+          "id": 15,
+          "type": "timeseries",
+          "title": "HTTP Status Distribution (200 vs 4xx vs 5xx)",
+          "gridPos": {
+            "h": 7,
+            "w": 6,
+            "x": 18,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vehicle-classifier-prometheus"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (status) (rate(vehicle_classifier_requests_total[1m]))",
+              "legendFormat": "HTTP {{status}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 16,
+          "type": "text",
+          "title": "OpenTelemetry Distributed Tracing & Span Lifecycle",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "### OpenTelemetry Distributed Request Tracing & Context Propagation\n\nEvery incoming request to the Vehicle Classifier API triggers an **end-to-end distributed trace** adhering to the **W3C Trace Context** specification:\n\n- **Root Span**: `predict_request`\n  - `read_upload_payload`: multipart bytes validation and memory buffering\n  - `validate_and_decode_image`: image verification, format decoding\n  - `convert_image_rgb`: tensor color transformation\n  - `model_inference` -> `pytorch_forward_pass`: ShuffleNet V2 forward computation\n\n#### Live Trace Context Verification\n- **Response Header Injection**: Every API response contains `X-Trace-ID: <32-hex-trace-id>`.\n- **Live Cluster Trace Stream**:\n  ```bash\n  kubectl logs -l app.kubernetes.io/name=vehicle-classifier-traffic-generator -n vehicle-classifier-staging --tail=10\n  ```\n- **Direct Endpoint Testing**:\n  ```bash\n  curl -i -X POST \"http://20.200.237.154:8000/predict\" -F \"file=@test_dataset/Car/aug_0158.jpg\"\n  ```\n"
+          }
+        }
       ]
     }
 ---
@@ -65,6 +760,9 @@ metadata:
     app.kubernetes.io/part-of: vehicle-classifier
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/name: vehicle-classifier-grafana
@@ -72,25 +770,35 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: vehicle-classifier-grafana
+        app.kubernetes.io/part-of: vehicle-classifier
     spec:
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        fsGroup: 472
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: grafana/grafana:13.2.4
-          ports:
-            - name: http
-              containerPort: 3000
+          imagePullPolicy: IfNotPresent
           env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "true"
             - name: GF_AUTH_ANONYMOUS_ORG_ROLE
-              value: Viewer
-            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "Viewer"
+            - name: GF_AUTH_BASIC_ENABLED
               value: "true"
-            - name: GF_USERS_DEFAULT_THEME
-              value: light
-            - name: GF_PLUGINS_PREINSTALL_DISABLED
-              value: "true"
+            - name: GF_LOG_LEVEL
+              value: "warn"
+          ports:
+            - name: http
+              containerPort: 3000
           readinessProbe:
             httpGet:
               path: /api/health
@@ -104,29 +812,27 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: 50m
+              cpu: 25m
               memory: 128Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 250m
+              memory: 256Mi
           volumeMounts:
             - name: provisioning
-              mountPath: /etc/grafana/provisioning
-              readOnly: true
+              mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
+              subPath: datasources.yaml
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+              subPath: dashboards.yaml
             - name: dashboards
-              mountPath: /etc/grafana/dashboards
-              readOnly: true
+              mountPath: /etc/grafana/dashboards/vehicle-classifier.json
+              subPath: vehicle-classifier.json
             - name: data
               mountPath: /var/lib/grafana
       volumes:
         - name: provisioning
           configMap:
             name: vehicle-classifier-grafana-provisioning
-            items:
-              - key: datasources.yaml
-                path: datasources/datasources.yaml
-              - key: dashboards.yaml
-                path: dashboards/dashboards.yaml
         - name: dashboards
           configMap:
             name: vehicle-classifier-grafana-dashboard
