@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: vehicle-classifier-api
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app.kubernetes.io/name: vehicle-classifier-api
   ports:

@@ -1,4 +1,5 @@
 stages:
+  # ── Stage 1: Data Manifest ────────────────────────────────────────────────────
   create_data_manifest:
     cmd: python -m scripts.create_data_manifest --config configs/data.yaml --output data/manifests/data_manifest.json
     deps:
@@ -42,6 +43,20 @@ stages:
       - data/manifests/data_manifest.json
       - reports/data_validation.json
       - vehicle_dataset
+    params:
+      - configs/teacher.yaml:
+          - seed
+          - deterministic
+          - data.validation_fraction
+          - training.batch_size
+          - training.epochs
+          - training.learning_rate
+          - training.gradient_accumulation_steps
+          - augmentation.horizontal_flip_probability
+          - augmentation.rotation_degrees
+          - augmentation.brightness_jitter
+          - augmentation.contrast_jitter
+          - augmentation.random_erasing_probability
     outs:
       - EfficientNet_B2_teacher_model.pth
       - reports/teacher_run.json
@@ -61,6 +76,22 @@ stages:
       - data/manifests/data_manifest.json
       - reports/data_validation.json
       - vehicle_dataset
+    params:
+      - configs/distillation.yaml:
+          - seed
+          - deterministic
+          - data.validation_fraction
+          - training.batch_size
+          - training.epochs
+          - training.learning_rate
+          - training.temperature
+          - training.alpha
+          - artifact.max_size_bytes
+          - augmentation.horizontal_flip_probability
+          - augmentation.rotation_degrees
+          - augmentation.brightness_jitter
+          - augmentation.contrast_jitter
+          - augmentation.random_erasing_probability
     outs:
       - student_model.pth
       - student_model.pth.json
@@ -82,6 +113,9 @@ stages:
       - student_model.pth
       - data/manifests/data_manifest.json
       - test_dataset
+    params:
+      - configs/evaluation.yaml:
+          - seed
     metrics:
       - reports/evaluation.json:
           cache: false
@@ -103,6 +137,9 @@ stages:
       - student_model.pth
       - data/manifests/data_manifest.json
       - test_MIO_TCD_data
+    params:
+      - configs/ood_evaluation.yaml:
+          - seed
     metrics:
       - reports/ood_evaluation.json:
           cache: false

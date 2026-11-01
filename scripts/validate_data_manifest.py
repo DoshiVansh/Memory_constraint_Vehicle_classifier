@@ -13,13 +13,14 @@ def main():
     parser.add_argument("--manifest", default="data/manifests/data_manifest.json")
     parser.add_argument("--output", default="reports/data_validation.json")
     parser.add_argument("--near-duplicate-distance", type=int, default=4)
+    parser.add_argument("--strict", action="store_true", help="Fail on warnings as well as errors")
     args = parser.parse_args()
     with open(args.manifest, encoding="utf-8") as stream:
         manifest = json.load(stream)
     report = validate_manifest(manifest, near_duplicate_distance=args.near_duplicate_distance)
     write_json(args.output, report)
     print(json.dumps({"status": report["status"], "errors": len(report["errors"]), "warnings": len(report["warnings"])}))
-    if report["status"] == "failed":
+    if report["status"] == "failed" or (args.strict and report["status"] == "review_warnings"):
         return 1
     return 0
 

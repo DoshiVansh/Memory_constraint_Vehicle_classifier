@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: vehicle-classifier-api
     app.kubernetes.io/part-of: vehicle-classifier
 spec:
-  replicas: 1
+  replicas: 2
   revisionHistoryLimit: 5
   progressDeadlineSeconds: 180
   strategy:
@@ -28,6 +28,8 @@ spec:
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 20
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

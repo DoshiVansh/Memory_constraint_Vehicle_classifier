@@ -1,3 +1,8 @@
+# DEPRECATED: This script has been superseded by scripts/ingest_data.py (DVC Stage 0).
+# It is kept for historical reference only. Do NOT run it directly — it shares the same
+# source_dir and seed as dataset_organizer.py without a cross-script exclusion list,
+# risking train/test raw-source overlap.
+# Use:  dvc repro ingest_data
 import os
 import random
 import argparse

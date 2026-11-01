@@ -2,5 +2,5 @@
     remote = storage
     analytics = false
 ['remote "storage"']
-    url = s3://vehicle-classifier-data/dvc
-    region = us-east-1
+    url = s3://dvc
+    endpointurl = https://dagshub.com/${DAGSHUB_USERNAME}/${DAGSHUB_REPO_NAME}.s3

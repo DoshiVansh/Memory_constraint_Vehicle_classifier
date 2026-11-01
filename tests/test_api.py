@@ -34,10 +34,35 @@ def test_api_contract_health_prediction_and_rejections(monkeypatch):
                 )
                 assert response.status_code == 200
                 body = response.json()
-                assert set(body) == {"predicted_index", "class_name", "model_sha256"}
+                assert set(body) == {"predicted_index", "class_name", "model_sha256", "confidence", "probabilities"}
                 assert body["predicted_index"] in CLASS_IDX
                 assert body["class_name"] == CLASS_IDX[body["predicted_index"]]
                 assert len(body["model_sha256"]) == 64
+                assert 0.0 <= body["confidence"] <= 1.0
+                assert set(body["probabilities"]) == {"Bus", "Truck", "Car", "Bike", "None"}
+
+                metrics_resp = await client.get("/metrics", follow_redirects=True)
+                assert metrics_resp.status_code == 200
+                metrics_text = metrics_resp.text
+                assert "vehicle_classifier_prediction_confidence" in metrics_text
+                assert "vehicle_classifier_predictions_total" in metrics_text
+
+                # Test OpenTelemetry trace endpoints
+                traces_resp = await client.get("/api/traces")
+                assert traces_resp.status_code == 200
+                traces_data = traces_resp.json()
+                assert "traces" in traces_data
+                assert len(traces_data["traces"]) > 0
+                sample_trace_id = traces_data["traces"][0]["trace_id"]
+
+                single_trace = await client.get(f"/api/traces/{sample_trace_id}")
+                assert single_trace.status_code == 200
+                assert single_trace.json()["trace_id"] == sample_trace_id
+                assert "spans" in single_trace.json()
+
+                html_resp = await client.get("/traces")
+                assert html_resp.status_code == 200
+                assert "Distributed Tracing" in html_resp.text
 
                 malformed = await client.post(
                     "/predict", files={"file": ("bad.png", b"not an image", "image/png")}
@@ -79,7 +104,7 @@ def test_api_contract_health_prediction_and_rejections(monkeypatch):
                 assert "multipart/form-data" in schema["paths"]["/predict"]["post"]["requestBody"]["content"]
                 response_schema = schema["paths"]["/predict"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
                 response_schema = schema["components"]["schemas"][response_schema["$ref"].rsplit("/", 1)[-1]]
-                assert set(response_schema["required"]) == {"predicted_index", "class_name", "model_sha256"}
+                assert set(response_schema["required"]) == {"predicted_index", "class_name", "model_sha256", "confidence", "probabilities"}
                 documented_statuses = schema["paths"]["/predict"]["post"]["responses"]
                 assert {"200", "400", "413", "415", "500"}.issubset(documented_statuses)
 

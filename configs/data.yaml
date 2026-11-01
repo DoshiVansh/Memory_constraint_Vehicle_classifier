@@ -21,14 +21,14 @@ datasets:
     path: ./vehicle_dataset
     role: training
     prefixed_classes: true
-    source: local curated training set; raw lineage not recorded
+    source: curated training split; raw lineage recorded in data/manifests/raw_split_manifest.json (ingest_data stage)
   target:
     path: ./test_dataset
     role: target
     prefixed_classes: false
-    source: fixed target evaluation set; raw lineage not recorded
+    source: fixed target evaluation split; raw lineage recorded in data/manifests/raw_split_manifest.json (ingest_data stage)
   ood:
     path: ./test_MIO_TCD_data
     role: ood
     prefixed_classes: false
-    source: mapped MIO-TCD stress set; raw lineage not recorded
+    source: mapped MIO-TCD stress set; built by build_mio_tcd_test.py (separate raw source, no ImageNet overlap)

@@ -67,7 +67,15 @@ def evaluate(config_path="configs/evaluation.yaml"):
     output = Path(config["output"])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    logger.info("Evaluation complete", extra={"samples": len(targets), "accuracy": report["accuracy"], "output": str(output)})
+    logger.info(
+        "Evaluation complete",
+        extra={
+            "samples": len(targets),
+            "accuracy": report["accuracy"],
+            "macro_f1": report.get("macro_f1"),
+            "output": str(output),
+        },
+    )
     return report
 
 

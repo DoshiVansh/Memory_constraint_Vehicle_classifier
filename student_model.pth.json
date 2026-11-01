@@ -8,9 +8,9 @@
     "3": "Bike",
     "4": "None"
   },
-  "model_alias": "champion",
   "model_name": "VehicleClassifier",
-  "model_version": "2",
+  "model_version": "1",
+  "model_alias": "champion",
   "preprocessing": {
     "color": "RGB",
     "mean": [
@@ -29,5 +29,9 @@
     ]
   },
   "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
-  "size_bytes": 2665366
+  "size_bytes": 2665366,
+  "metrics": {
+    "accuracy": 0.9240000247955322,
+    "macro_f1": 0.9239610405408738
+  }
 }

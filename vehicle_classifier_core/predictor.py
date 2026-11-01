@@ -8,6 +8,7 @@ from PIL import Image
 
 from .model import CLASS_IDX, build_student_model
 from .preprocessing import inference_transform
+from .telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +44,40 @@ class VehicleClassifier:
             raise InferenceError(f"Unable to read image {image_path}: {exc}") from exc
         return self.predict_image(decoded)
 
-    def predict_image(self, image: Image.Image) -> int:
-        """Predict from an already decoded PIL image."""
+    def predict_image_detailed(self, image: Image.Image) -> dict:
+        """Predict from an already decoded PIL image, returning class index, name, confidence, and probabilities."""
+        tracer = get_tracer()
         try:
-            tensor = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
+            with tracer.start_as_current_span("tensor_preprocessing") as span:
+                tensor = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
+                span.set_attribute("tensor.shape", str(list(tensor.shape)))
+                span.set_attribute("tensor.device", str(self.device))
         except Exception as exc:
             raise InferenceError(f"Unable to preprocess image: {exc}") from exc
         try:
-            with torch.inference_mode():
-                prediction = self.model(tensor).argmax(dim=1).item()
+            with tracer.start_as_current_span("pytorch_forward_pass") as span:
+                with torch.inference_mode():
+                    logits = self.model(tensor)
+                    probs = torch.softmax(logits, dim=1).squeeze(0)
+                    predicted_index = int(probs.argmax().item())
+                    confidence = float(probs[predicted_index].item())
+                    probabilities = {
+                        CLASS_IDX[i]: float(probs[i].item())
+                        for i in range(len(CLASS_IDX))
+                    }
+                span.set_attribute("model.num_classes", len(CLASS_IDX))
+                span.set_attribute("prediction.class_name", CLASS_IDX[predicted_index])
+                span.set_attribute("prediction.confidence", round(confidence, 6))
         except Exception as exc:
             logger.exception("Model inference failed")
             raise InferenceError(f"Inference failed: {exc}") from exc
-        return int(prediction)
+        return {
+            "predicted_index": predicted_index,
+            "class_name": CLASS_IDX[predicted_index],
+            "confidence": round(confidence, 6),
+            "probabilities": {k: round(v, 6) for k, v in probabilities.items()},
+        }
+
+    def predict_image(self, image: Image.Image) -> int:
+        """Predict from an already decoded PIL image."""
+        return self.predict_image_detailed(image)["predicted_index"]

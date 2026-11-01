@@ -17,14 +17,13 @@ import urllib.request
 import zlib
 
 
-def png_sample():
-    """Generate a deterministic 32x32 RGB PNG using only the standard library."""
+def png_sample(width=32, height=32):
+    """Generate a deterministic RGB PNG of specified dimensions using only the standard library."""
 
     def chunk(kind, data):
         payload = kind + data
         return len(data).to_bytes(4, "big") + payload + (zlib.crc32(payload) & 0xFFFFFFFF).to_bytes(4, "big")
 
-    width = height = 32
     rows = bytearray()
     for y in range(height):
         rows.append(0)
@@ -127,7 +126,7 @@ def git_worktree_dirty():
         return None
 
 
-def run_level(base_url, body, content_type, concurrency, request_count):
+def run_level(base_url, payloads, concurrency, request_count, content_type=None):
     metrics_url = f"{base_url}/metrics"
     stop_event = threading.Event()
     resource_samples = []
@@ -141,8 +140,24 @@ def run_level(base_url, body, content_type, concurrency, request_count):
     time.sleep(0.2)
     started = time.perf_counter()
     outcomes = []
+
+    if isinstance(payloads, (bytes, bytearray)):
+        payload_list = [(payloads, content_type or "application/octet-stream")]
+    elif isinstance(payloads, list) and payloads and isinstance(payloads[0], tuple):
+        payload_list = [(item[0], item[1]) for item in payloads]
+    else:
+        payload_list = [(payloads, content_type)]
+
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        futures = [executor.submit(make_request, base_url, body, content_type) for _ in range(request_count)]
+        futures = [
+            executor.submit(
+                make_request,
+                base_url,
+                payload_list[i % len(payload_list)][0],
+                payload_list[i % len(payload_list)][1],
+            )
+            for i in range(request_count)
+        ]
         for future in as_completed(futures):
             outcomes.append(future.result())
     elapsed = time.perf_counter() - started
@@ -160,6 +175,14 @@ def run_level(base_url, body, content_type, concurrency, request_count):
             key = str(row["status"])
             errors_by_status[key] = errors_by_status.get(key, 0) + 1
 
+    confidences = [
+        row["response"]["confidence"]
+        for row in outcomes
+        if row["valid_prediction"]
+        and isinstance(row.get("response"), dict)
+        and "confidence" in row["response"]
+    ]
+
     cpu_samples = [row for row in resource_samples if "cpu_seconds" in row]
     memory_samples = [row["resident_memory_bytes"] for row in resource_samples if "resident_memory_bytes" in row]
     cpu_cores = None
@@ -176,11 +199,13 @@ def run_level(base_url, body, content_type, concurrency, request_count):
         "error_rate": (request_count - successes) / request_count,
         "error_statuses": errors_by_status,
         "prediction_class_counts": dict(sorted(class_distribution.items())),
+        "average_confidence": sum(confidences) / len(confidences) if confidences else None,
         "elapsed_seconds": elapsed,
         "throughput_requests_per_second": request_count / elapsed if elapsed else 0,
         "latency_seconds": {
             "p50": percentile(latencies, 0.50),
             "p95": percentile(latencies, 0.95),
+            "p99": percentile(latencies, 0.99),
             "max": max(latencies, default=0),
         },
         "service_process": {
@@ -199,6 +224,19 @@ def main():
     parser.add_argument("--base-url", default="http://127.0.0.1:18000")
     parser.add_argument("--concurrency", nargs="+", type=int, default=[1, 2, 4])
     parser.add_argument("--requests-per-level", type=int, default=30)
+    parser.add_argument(
+        "--resolutions",
+        nargs="+",
+        type=int,
+        default=[32, 224],
+        help="Multi-resolution image sizes (width/height) to benchmark",
+    )
+    parser.add_argument(
+        "--image-path",
+        type=Path,
+        default=None,
+        help="Optional path to a real image file to benchmark",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--service-image-ref", default=os.getenv("SERVICE_IMAGE_REF", "unknown"))
     parser.add_argument("--cluster-context", default=os.getenv("KUBERNETES_CONTEXT", "unknown"))
@@ -211,15 +249,29 @@ def main():
     if status != 200:
         raise SystemExit(f"API is not ready (HTTP {status}): {ready_bytes[:300]!r}")
     readiness = json.loads(ready_bytes)
-    image_bytes = png_sample()
-    body, content_type = multipart_body(image_bytes)
-    for _ in range(3):
-        result = make_request(base_url, body, content_type)
+
+    payloads = []
+    if args.image_path and args.image_path.is_file():
+        raw_bytes = args.image_path.read_bytes()
+        body, ct = multipart_body(raw_bytes)
+        payloads.append((body, ct, f"file:{args.image_path.name}"))
+    for res in args.resolutions:
+        img_bytes = png_sample(width=res, height=res)
+        body, ct = multipart_body(img_bytes)
+        payloads.append((body, ct, f"synthetic:{res}x{res}"))
+
+    for body, ct, _ in payloads[:3]:
+        result = make_request(base_url, body, ct)
         if not result["valid_prediction"]:
             raise SystemExit(f"Warm-up prediction failed: {result}")
 
     results = [
-        run_level(base_url, body, content_type, level, args.requests_per_level)
+        run_level(
+            base_url,
+            [(b, ct) for b, ct, _ in payloads],
+            level,
+            args.requests_per_level,
+        )
         for level in args.concurrency
     ]
     report = {
@@ -234,8 +286,9 @@ def main():
         "workload": {
             "method": "multipart POST /predict",
             "image_format": "PNG",
-            "image_bytes": len(image_bytes),
-            "warmup_requests": 3,
+            "resolutions": args.resolutions,
+            "payload_samples": len(payloads),
+            "warmup_requests": min(3, len(payloads)),
             "concurrency_levels": args.concurrency,
             "requests_per_level": args.requests_per_level,
         },

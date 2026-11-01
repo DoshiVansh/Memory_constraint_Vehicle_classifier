@@ -20,3 +20,17 @@ def test_canonical_checkpoint_loads_and_predicts():
     classifier = VehicleClassifier("student_model.pth")
     assert classifier.model.training is False
     assert next(classifier.model.parameters()).device.type == "cpu"
+
+
+def test_detailed_prediction_returns_confidence_and_probabilities(tmp_path):
+    classifier = VehicleClassifier("student_model.pth")
+    img = Image.new("RGB", (64, 64), color=(50, 100, 150))
+    result = classifier.predict_image_detailed(img)
+
+    assert isinstance(result, dict)
+    assert "predicted_index" in result and result["predicted_index"] in CLASS_IDX
+    assert "class_name" in result and result["class_name"] == CLASS_IDX[result["predicted_index"]]
+    assert "confidence" in result and 0.0 <= result["confidence"] <= 1.0
+    assert "probabilities" in result
+    assert set(result["probabilities"].keys()) == set(CLASS_IDX.values())
+    assert abs(sum(result["probabilities"].values()) - 1.0) < 1e-4

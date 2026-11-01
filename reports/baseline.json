@@ -13,7 +13,7 @@
     "path": "test_dataset",
     "provenance": "unverified",
     "sample_count": 2500,
-    "version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a"
+    "version": "manifest-sha256:24ab87c51d2d13ecfd155a55496456a7202f27350d137d9a44bf9fcc006e5c04"
   },
   "fresh_run": {
     "checkpoint_sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
@@ -55,8 +55,8 @@
         475
       ]
     ],
-    "data_version": "manifest-sha256:3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
-    "dataset_manifest_sha256": "3c40f2a7c554220c35c98db4b299a29b3f9c6391f2d56a31695796bc8ccfd35a",
+    "data_version": "manifest-sha256:24ab87c51d2d13ecfd155a55496456a7202f27350d137d9a44bf9fcc006e5c04",
+    "dataset_manifest_sha256": "24ab87c51d2d13ecfd155a55496456a7202f27350d137d9a44bf9fcc006e5c04",
     "dvc_lock_sha256": "08934eb4de1b08bdb599f63c4cd273e882d3eeaa3b622057ac92fb9606f2c410",
     "git_revision": "0762ae53911e71a0ac2058073522d43f7ff9f225",
     "mean_latency_ms": 9.554056050399959,
