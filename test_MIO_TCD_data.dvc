@@ -1,0 +1,6 @@
+outs:
+- md5: 342811529ea3fcdc7ef28d19a539ade4.dir
+  size: 16546610
+  nfiles: 2500
+  hash: md5
+  path: test_MIO_TCD_data

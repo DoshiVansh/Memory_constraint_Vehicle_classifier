@@ -1,0 +1,32 @@
+2026-03-14 18:58:11 | Starting Knowledge Distillation on device: cuda
+2026-03-14 18:58:11 | --- KD Hyperparameters ---
+2026-03-14 18:58:11 | Temperature (T): 4.0
+2026-03-14 18:58:11 | Alpha (CE Weight): 0.5
+2026-03-14 18:58:11 | Batch Size: 32
+2026-03-14 18:58:11 | Epochs: 20
+2026-03-14 18:58:11 | --------------------------
+2026-03-14 18:58:11 | Loading finetuned Teacher model (ResNet-50)...
+2026-03-14 18:58:11 | Initializing Student model (SqueezeNet)...
+2026-03-14 18:58:45 | Epoch 1: Val Acc improved from 0.00% to 68.86%. Saving Student!
+2026-03-14 18:59:17 | Epoch 2: Val Acc improved from 68.86% to 79.25%. Saving Student!
+2026-03-14 18:59:49 | Epoch 3: Val Acc improved from 79.25% to 81.76%. Saving Student!
+2026-03-14 19:00:22 | Epoch 4: Val Acc improved from 81.76% to 85.24%. Saving Student!
+2026-03-14 19:00:54 | Epoch 5: Val Acc improved from 85.24% to 85.78%. Saving Student!
+2026-03-14 19:01:27 | Epoch 6 | Time: 32.6s | Total Loss: 1.3999 | Train Acc: 83.49% | Val Acc: 84.95%
+2026-03-14 19:02:00 | Epoch 7 | Time: 32.8s | Total Loss: 1.3916 | Train Acc: 83.09% | Val Acc: 84.31%
+2026-03-14 19:02:32 | Epoch 8 | Time: 32.6s | Total Loss: 1.3033 | Train Acc: 84.37% | Val Acc: 83.95%
+2026-03-14 19:03:05 | Epoch 9: Val Acc improved from 85.78% to 86.24%. Saving Student!
+2026-03-14 19:03:39 | Epoch 10 | Time: 33.9s | Total Loss: 1.2061 | Train Acc: 85.58% | Val Acc: 86.10%
+2026-03-14 19:04:11 | Epoch 11: Val Acc improved from 86.24% to 86.89%. Saving Student!
+2026-03-14 19:04:44 | Epoch 12 | Time: 32.7s | Total Loss: 1.1807 | Train Acc: 85.72% | Val Acc: 86.24%
+2026-03-14 19:05:18 | Epoch 13 | Time: 33.8s | Total Loss: 1.1041 | Train Acc: 86.82% | Val Acc: 86.71%
+2026-03-14 19:05:51 | Epoch 14 | Time: 32.6s | Total Loss: 1.0838 | Train Acc: 86.42% | Val Acc: 86.35%
+2026-03-14 19:06:24 | Epoch 15: Val Acc improved from 86.89% to 87.60%. Saving Student!
+2026-03-14 19:06:57 | Epoch 16: Val Acc improved from 87.60% to 87.96%. Saving Student!
+2026-03-14 19:07:30 | Epoch 17 | Time: 32.7s | Total Loss: 1.0166 | Train Acc: 87.54% | Val Acc: 85.74%
+2026-03-14 19:08:03 | Epoch 18 | Time: 32.9s | Total Loss: 0.9798 | Train Acc: 88.24% | Val Acc: 87.46%
+2026-03-14 19:08:36 | Epoch 19 | Time: 33.2s | Total Loss: 0.9974 | Train Acc: 87.57% | Val Acc: 86.49%
+2026-03-14 19:09:08 | Epoch 20 | Time: 32.7s | Total Loss: 0.9762 | Train Acc: 88.11% | Val Acc: 87.82%
+2026-03-14 19:09:08 | 
+Distillation Complete. Best Student Validation Accuracy: 87.96%
+2026-03-14 19:09:08 | The highly optimized < 5 MB weights are saved as 'Squeezenet_model.pth'.

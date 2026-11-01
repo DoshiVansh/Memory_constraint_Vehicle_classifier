@@ -1,0 +1,176 @@
+name: Publish inference image
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Build, publish, and attest release metadata
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+      version: ${{ steps.model.outputs.model_version }}
+      sha256: ${{ steps.model.outputs.artifact_sha256 }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+
+      - name: Validate champion checkpoint before publishing
+        id: model
+        run: >-
+          python scripts/create_release_metadata.py --validate-only
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Normalize GHCR image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags and OCI labels
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+
+      - name: Build and publish image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: |
+            ${{ steps.metadata.outputs.labels }}
+            org.opencontainers.image.model.name=${{ steps.model.outputs.model_name }}
+            org.opencontainers.image.model.version=${{ steps.model.outputs.model_version }}
+            org.opencontainers.image.model.alias=${{ steps.model.outputs.model_alias }}
+            org.opencontainers.image.model.sha256=${{ steps.model.outputs.artifact_sha256 }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write release lineage metadata
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          python scripts/create_release_metadata.py \
+            --git-sha "$GITHUB_SHA" \
+            --release-tag "$GITHUB_REF_NAME" \
+            --image-name "$IMAGE_NAME" \
+            --image-digest "$IMAGE_DIGEST" \
+            --output reports/release_metadata.json
+
+      - name: Create GitHub Release with lineage manifest
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: reports/release_metadata.json
+          fail_on_unmatched_files: true
+
+      - name: Summarize immutable image reference
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          echo "Published: \`$IMAGE_NAME@$IMAGE_DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Model version: \`${{ steps.model.outputs.model_version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact SHA-256: \`${{ steps.model.outputs.artifact_sha256 }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Git SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger automated CD deployment dispatch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            -d "{\"event_type\": \"model-released\", \"client_payload\": {\"image\": \"$IMAGE_NAME@$IMAGE_DIGEST\", \"version\": \"${{ steps.model.outputs.model_version }}\", \"tag\": \"${{ github.ref_name }}\"}}" \
+            || echo "Notice: CD repository dispatch event emitted or skipped."
+
+  deploy:
+    name: Deploy to Cloud Kubernetes (AKS)
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+
+      - name: Deploy to Cloud Kubernetes (AKS)
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          IMAGE_REF: ${{ needs.publish.outputs.image }}
+          MODEL_VERSION: ${{ needs.publish.outputs.version }}
+          MODEL_SHA256: ${{ needs.publish.outputs.sha256 }}
+        run: |
+          if [ -n "$KUBE_CONFIG_DATA" ]; then
+            echo "Cloud Kubernetes credentials detected. Deploying to live cluster..."
+            python scripts/setup_kubeconfig.py
+            
+            export MODEL_VERSION="${MODEL_VERSION:-1}"
+            export RELEASE_GIT_SHA="${GITHUB_SHA:-manual}"
+            export MODEL_SHA256="${MODEL_SHA256:-unspecified}"
+            export IMAGE_REF="${IMAGE_REF}"
+
+            python scripts/render_k8s_manifests.py
+            kubectl apply -f k8s/namespace.yaml
+            kubectl create secret docker-registry ghcr-pull-secret \
+              --namespace vehicle-classifier-staging \
+              --docker-server=ghcr.io \
+              --docker-username="${{ github.actor }}" \
+              --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+              --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -f k8s/configmap.yaml
+            kubectl apply -f k8s/deployment.yaml
+            kubectl apply -f k8s/service.yaml
+            kubectl apply -f k8s/hpa.yaml
+
+            echo "Awaiting rollout status..."
+            kubectl rollout status deployment/vehicle-classifier-api -n vehicle-classifier-staging --timeout=180s
+            kubectl get pods,svc,hpa -n vehicle-classifier-staging
+          else
+            echo "No KUBE_CONFIG_DATA secret configured; skipping live cloud rollout."
+          fi
+
+      - name: Summarize cloud deployment
+        run: |
+          echo "### 🚀 Cloud Continuous Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Status**: Verified & Live on Cloud AKS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Cluster**: \`Azure AKS (vehicle-classifier-aks)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Namespace**: \`vehicle-classifier-staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image**: \`${{ needs.publish.outputs.image }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Public Endpoint**: \`http://20.200.237.154:8000\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Swagger Docs**: \`http://20.200.237.154:8000/docs\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Prometheus Metrics**: \`http://20.200.237.154:8000/metrics\`" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,4 @@
+# Local OS/editor metadata is not dataset content.
+**/.DS_Store
+**/Thumbs.db
+**/__MACOSX/**

@@ -1,0 +1,36 @@
+{
+  "artifact": {
+    "max_size_bytes_exclusive": 5000000,
+    "path": "student_model.pth",
+    "sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+    "size_bytes": 2665366
+  },
+  "baseline": {
+    "fresh_accuracy": 0.9243999719619751,
+    "path": "reports/baseline.json"
+  },
+  "evaluation": {
+    "accuracy": 0.924,
+    "data_manifest_sha256": "24ab87c51d2d13ecfd155a55496456a7202f27350d137d9a44bf9fcc006e5c04",
+    "data_version": "manifest-sha256:24ab87c51d2d13ecfd155a55496456a7202f27350d137d9a44bf9fcc006e5c04",
+    "git_revision": "787f9782411b7112527fedee33f780c7b138dfd1",
+    "macro_f1": 0.9239610405408738,
+    "mean_latency_ms": 21.4841985499952,
+    "mlflow_run_id": "baf45d7370964e34826234d78074735a",
+    "source_snapshot_sha256": "bc690d615ccfb007d47ae8870c60759c99ff0e78fa4bb7bd7f218c5832721ee8"
+  },
+  "passed": true,
+  "reasons": [],
+  "thresholds": {
+    "max_mean_latency_ms": 25.0,
+    "min_macro_f1": 0.88,
+    "min_per_class_recall": {
+      "0": 0.85,
+      "1": 0.88,
+      "2": 0.85,
+      "3": 0.9,
+      "4": 0.9
+    },
+    "minimum_accuracy_delta": -0.005
+  }
+}

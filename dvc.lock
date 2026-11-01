@@ -1,0 +1,385 @@
+schema: '2.0'
+stages:
+  create_data_manifest:
+    cmd: python -m scripts.create_data_manifest --config configs/data.yaml 
+      --output data/manifests/data_manifest.json
+    deps:
+    - path: configs/data.yaml
+      hash: md5
+      md5: ad8255afd596d129fd3f9fb6e6157ed2
+      size: 1097
+    - path: scripts/create_data_manifest.py
+      hash: md5
+      md5: 765eb6afb0b85ddf324320bda0dbd054
+      size: 840
+    - path: test_MIO_TCD_data
+      hash: md5
+      md5: 342811529ea3fcdc7ef28d19a539ade4.dir
+      size: 16546610
+      nfiles: 2500
+    - path: test_dataset
+      hash: md5
+      md5: f94943e3c1126c79d8f2192898aed7ea.dir
+      size: 24122682
+      nfiles: 2500
+    - path: vehicle_classifier_core/config.py
+      hash: md5
+      md5: 652cc8cdb0de45867d457fd79c68ab04
+      size: 618
+    - path: vehicle_classifier_core/data.py
+      hash: md5
+      md5: b0da7bc6052a9086470c482d98fb61a5
+      size: 3412
+    - path: vehicle_classifier_core/data_versioning.py
+      hash: md5
+      md5: 7175666a238e8cb71ea6acb2f0bcba8e
+      size: 12142
+    - path: vehicle_dataset
+      hash: md5
+      md5: 3a91cc2e3ecd6f4d925a9d2a564616f5.dir
+      size: 2044678187
+      nfiles: 19690
+    params:
+      configs/data.yaml:
+        datasets:
+          training:
+            path: ./vehicle_dataset
+            role: training
+            prefixed_classes: true
+            source: curated training split; raw lineage recorded in 
+              data/manifests/raw_split_manifest.json (ingest_data stage)
+          target:
+            path: ./test_dataset
+            role: target
+            prefixed_classes: false
+            source: fixed target evaluation split; raw lineage recorded in 
+              data/manifests/raw_split_manifest.json (ingest_data stage)
+          ood:
+            path: ./test_MIO_TCD_data
+            role: ood
+            prefixed_classes: false
+            source: mapped MIO-TCD stress set; built by build_mio_tcd_test.py 
+              (separate raw source, no ImageNet overlap)
+        seed: 1729
+        validation_fraction: 0.2
+    outs:
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+  validate_data:
+    cmd: python -m scripts.validate_data_manifest --manifest 
+      data/manifests/data_manifest.json --output reports/data_validation.json
+    deps:
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+    - path: scripts/validate_data_manifest.py
+      hash: md5
+      md5: b6b53df10b733acba3e523944a5a371a
+      size: 1187
+    - path: vehicle_classifier_core/data_versioning.py
+      hash: md5
+      md5: 7175666a238e8cb71ea6acb2f0bcba8e
+      size: 12142
+    params:
+      configs/data.yaml:
+        seed: 1729
+    outs:
+    - path: reports/data_validation.json
+      hash: md5
+      md5: d18e4c06349092ea5987e17c54283307
+      size: 50278
+  evaluate_target:
+    cmd: python evaluate_test_set.py --config configs/evaluation.yaml
+    deps:
+    - path: configs/evaluation.yaml
+      hash: md5
+      md5: 6c5aa38eef76cc2ce84f481770e61d00
+      size: 301
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+    - path: evaluate_test_set.py
+      hash: md5
+      md5: 5c9648058ca9998e62b82cc1b4daa6db
+      size: 3918
+    - path: requirements-mlflow-model.txt
+      hash: md5
+      md5: 8fe36a46087548538f513ad3933dbef6
+      size: 168
+    - path: student_model.pth
+      hash: md5
+      md5: 5706ec1b958de2862e1ec4c067de7e36
+      size: 2665366
+    - path: test_dataset
+      hash: md5
+      md5: f94943e3c1126c79d8f2192898aed7ea.dir
+      size: 24122682
+      nfiles: 2500
+    - path: vehicle_classifier_core/config.py
+      hash: md5
+      md5: 652cc8cdb0de45867d457fd79c68ab04
+      size: 618
+    - path: vehicle_classifier_core/evaluation.py
+      hash: md5
+      md5: bd56e36cb94011914404b0d3808a995b
+      size: 3485
+    - path: vehicle_classifier_core/mlflow_model.py
+      hash: md5
+      md5: f4815bbd173588931732d68c4066ea41
+      size: 770
+    - path: vehicle_classifier_core/model.py
+      hash: md5
+      md5: c6491389d42fad523e38a01488850c14
+      size: 912
+    - path: vehicle_classifier_core/predictor.py
+      hash: md5
+      md5: a22477f1c1fbe022d4ac27cab2880940
+      size: 3905
+    - path: vehicle_classifier_core/preprocessing.py
+      hash: md5
+      md5: 23d33132098f4c7a583c1eee1c914d74
+      size: 1925
+    - path: vehicle_classifier_core/reproducibility.py
+      hash: md5
+      md5: ae3c89517dcb808036e5087c9cbaace6
+      size: 5936
+    - path: vehicle_classifier_core/tracking.py
+      hash: md5
+      md5: 554eda3dc05d3522a494d5d43a9c56bf
+      size: 14914
+    params:
+      configs/evaluation.yaml:
+        seed: 1729
+    outs:
+    - path: reports/evaluation.json
+      hash: md5
+      md5: 057e1b52e3a94453534572499d0de6cc
+      size: 7764
+  evaluate_ood:
+    cmd: python evaluate_mio_tcd.py --config configs/ood_evaluation.yaml
+    deps:
+    - path: configs/ood_evaluation.yaml
+      hash: md5
+      md5: bdc3e6cc95ead08a6704fd9cfff58898
+      size: 310
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+    - path: evaluate_mio_tcd.py
+      hash: md5
+      md5: bf3fc54cd30d309220e7003ca07ba979
+      size: 614
+    - path: evaluate_test_set.py
+      hash: md5
+      md5: 5c9648058ca9998e62b82cc1b4daa6db
+      size: 3918
+    - path: requirements-mlflow-model.txt
+      hash: md5
+      md5: 8fe36a46087548538f513ad3933dbef6
+      size: 168
+    - path: student_model.pth
+      hash: md5
+      md5: 5706ec1b958de2862e1ec4c067de7e36
+      size: 2665366
+    - path: test_MIO_TCD_data
+      hash: md5
+      md5: 342811529ea3fcdc7ef28d19a539ade4.dir
+      size: 16546610
+      nfiles: 2500
+    - path: vehicle_classifier_core/config.py
+      hash: md5
+      md5: 652cc8cdb0de45867d457fd79c68ab04
+      size: 618
+    - path: vehicle_classifier_core/evaluation.py
+      hash: md5
+      md5: bd56e36cb94011914404b0d3808a995b
+      size: 3485
+    - path: vehicle_classifier_core/mlflow_model.py
+      hash: md5
+      md5: f4815bbd173588931732d68c4066ea41
+      size: 770
+    - path: vehicle_classifier_core/model.py
+      hash: md5
+      md5: c6491389d42fad523e38a01488850c14
+      size: 912
+    - path: vehicle_classifier_core/predictor.py
+      hash: md5
+      md5: a22477f1c1fbe022d4ac27cab2880940
+      size: 3905
+    - path: vehicle_classifier_core/preprocessing.py
+      hash: md5
+      md5: 23d33132098f4c7a583c1eee1c914d74
+      size: 1925
+    - path: vehicle_classifier_core/reproducibility.py
+      hash: md5
+      md5: ae3c89517dcb808036e5087c9cbaace6
+      size: 5936
+    - path: vehicle_classifier_core/tracking.py
+      hash: md5
+      md5: 554eda3dc05d3522a494d5d43a9c56bf
+      size: 14914
+    params:
+      configs/ood_evaluation.yaml:
+        seed: 1729
+    outs:
+    - path: reports/ood_evaluation.json
+      hash: md5
+      md5: 21ca541ee9559f3680bf9e199b87d99b
+      size: 7834
+  train_teacher:
+    cmd: python train_teacher.py --config configs/teacher.yaml
+    deps:
+    - path: configs/teacher.yaml
+      hash: md5
+      md5: aff052f6bbd6e9e1c0cace606ef1620e
+      size: 775
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+    - path: reports/data_validation.json
+      hash: md5
+      md5: d18e4c06349092ea5987e17c54283307
+      size: 50278
+    - path: train_teacher.py
+      hash: md5
+      md5: 8d0fbe59ff3d7da97098eb9fa9343272
+      size: 4580
+    - path: vehicle_classifier_core/config.py
+      hash: md5
+      md5: 652cc8cdb0de45867d457fd79c68ab04
+      size: 618
+    - path: vehicle_classifier_core/data.py
+      hash: md5
+      md5: b0da7bc6052a9086470c482d98fb61a5
+      size: 3412
+    - path: vehicle_classifier_core/model.py
+      hash: md5
+      md5: c6491389d42fad523e38a01488850c14
+      size: 912
+    - path: vehicle_classifier_core/reproducibility.py
+      hash: md5
+      md5: ae3c89517dcb808036e5087c9cbaace6
+      size: 5936
+    - path: vehicle_classifier_core/tracking.py
+      hash: md5
+      md5: 554eda3dc05d3522a494d5d43a9c56bf
+      size: 14914
+    - path: vehicle_dataset
+      hash: md5
+      md5: 3a91cc2e3ecd6f4d925a9d2a564616f5.dir
+      size: 2044678187
+      nfiles: 19690
+    params:
+      configs/teacher.yaml:
+        augmentation.brightness_jitter: 0.3
+        augmentation.contrast_jitter: 0.3
+        augmentation.horizontal_flip_probability: 0.5
+        augmentation.random_erasing_probability: 0.5
+        augmentation.rotation_degrees: 15
+        data.validation_fraction: 0.2
+        deterministic: true
+        seed: 1729
+        training.batch_size: 32
+        training.epochs: 1
+        training.gradient_accumulation_steps: 1
+        training.learning_rate: 0.0001
+    outs:
+    - path: EfficientNet_B2_teacher_model.pth
+      hash: md5
+      md5: 5c939b8ab5352c9ebb71b6632d95edfd
+      size: 31290163
+    - path: reports/teacher_run.json
+      hash: md5
+      md5: 41425ffeed5eeca13f75e1bf79175a92
+      size: 1844
+  train_student:
+    cmd: python train_distillation.py --config configs/distillation.yaml
+    deps:
+    - path: EfficientNet_B2_teacher_model.pth
+      hash: md5
+      md5: 5c939b8ab5352c9ebb71b6632d95edfd
+      size: 31290163
+    - path: configs/distillation.yaml
+      hash: md5
+      md5: c622c0310fab493b051a2786f518a07b
+      size: 823
+    - path: data/manifests/data_manifest.json
+      hash: md5
+      md5: 30ac9bab134b545dfb6e6c0e82bb52b8
+      size: 12958503
+    - path: reports/data_validation.json
+      hash: md5
+      md5: d18e4c06349092ea5987e17c54283307
+      size: 50278
+    - path: train_distillation.py
+      hash: md5
+      md5: c87f7b2fc0b231a80b517f931f186aeb
+      size: 6062
+    - path: vehicle_classifier_core/config.py
+      hash: md5
+      md5: 652cc8cdb0de45867d457fd79c68ab04
+      size: 618
+    - path: vehicle_classifier_core/data.py
+      hash: md5
+      md5: b0da7bc6052a9086470c482d98fb61a5
+      size: 3412
+    - path: vehicle_classifier_core/model.py
+      hash: md5
+      md5: c6491389d42fad523e38a01488850c14
+      size: 912
+    - path: vehicle_classifier_core/packaging.py
+      hash: md5
+      md5: 033ac0d6ffd92666b870d6d4b7dc6b14
+      size: 1458
+    - path: vehicle_classifier_core/preprocessing.py
+      hash: md5
+      md5: 23d33132098f4c7a583c1eee1c914d74
+      size: 1925
+    - path: vehicle_classifier_core/reproducibility.py
+      hash: md5
+      md5: ae3c89517dcb808036e5087c9cbaace6
+      size: 5936
+    - path: vehicle_classifier_core/tracking.py
+      hash: md5
+      md5: 554eda3dc05d3522a494d5d43a9c56bf
+      size: 14914
+    - path: vehicle_dataset
+      hash: md5
+      md5: 3a91cc2e3ecd6f4d925a9d2a564616f5.dir
+      size: 2044678187
+      nfiles: 19690
+    params:
+      configs/distillation.yaml:
+        artifact.max_size_bytes: 5000000
+        augmentation.brightness_jitter: 0.3
+        augmentation.contrast_jitter: 0.3
+        augmentation.horizontal_flip_probability: 0.5
+        augmentation.random_erasing_probability: 0.5
+        augmentation.rotation_degrees: 15
+        data.validation_fraction: 0.2
+        deterministic: true
+        seed: 1729
+        training.alpha: 0.5
+        training.batch_size: 64
+        training.epochs: 1
+        training.learning_rate: 0.0003
+        training.temperature: 4.0
+    outs:
+    - path: reports/distillation_run.json
+      hash: md5
+      md5: 0c89548f72a27a58eeae8be2bafce6e0
+      size: 1905
+    - path: student_model.pth
+      hash: md5
+      md5: 5706ec1b958de2862e1ec4c067de7e36
+      size: 2665366
+    - path: student_model.pth.json
+      hash: md5
+      md5: 22e6a03dda342ba950187d0c794fe0ed
+      size: 679

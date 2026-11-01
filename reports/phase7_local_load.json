@@ -1,0 +1,109 @@
+{
+  "client_environment": {
+    "cpu_count": 12,
+    "host_memory_bytes": 15530852352,
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4"
+  },
+  "cluster_context": "kind-vehicle-classifier-phase6",
+  "created_at_utc": "2026-10-26T12:53:32.480334+00:00",
+  "git_revision": "b2018b2d34baf8fec8d57fce8c25735f1d7e27d0",
+  "git_worktree_dirty": true,
+  "interpretation": "Local demo measurements only; do not use as production SLO or capacity claims.",
+  "model_sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4",
+  "results": [
+    {
+      "concurrency": 1,
+      "elapsed_seconds": 12.690067424000517,
+      "error_rate": 0.0,
+      "error_statuses": {},
+      "errors": 0,
+      "latency_seconds": {
+        "max": 0.20150508300048386,
+        "p50": 0.13354418300059478,
+        "p95": 0.15524059000017587
+      },
+      "prediction_class_counts": {
+        "None": 100
+      },
+      "requests": 100,
+      "service_process": {
+        "cpu_cores_average_during_sample": 1.986483319877664,
+        "resident_memory_bytes_end": 316239872.0,
+        "resident_memory_bytes_peak_sampled": 316239872.0,
+        "resident_memory_bytes_start": 316108800.0,
+        "sample_count": 19,
+        "sampling_errors": []
+      },
+      "successes": 100,
+      "throughput_requests_per_second": 7.880178777527346
+    },
+    {
+      "concurrency": 2,
+      "elapsed_seconds": 10.496980253000402,
+      "error_rate": 0.0,
+      "error_statuses": {},
+      "errors": 0,
+      "latency_seconds": {
+        "max": 0.2892964060001759,
+        "p50": 0.20196175199998834,
+        "p95": 0.28032480599995324
+      },
+      "prediction_class_counts": {
+        "None": 100
+      },
+      "requests": 100,
+      "service_process": {
+        "cpu_cores_average_during_sample": 2.019005137364082,
+        "resident_memory_bytes_end": 316239872.0,
+        "resident_memory_bytes_peak_sampled": 316239872.0,
+        "resident_memory_bytes_start": 316239872.0,
+        "sample_count": 13,
+        "sampling_errors": []
+      },
+      "successes": 100,
+      "throughput_requests_per_second": 9.526549311304699
+    },
+    {
+      "concurrency": 4,
+      "elapsed_seconds": 10.020236866999767,
+      "error_rate": 0.0,
+      "error_statuses": {},
+      "errors": 0,
+      "latency_seconds": {
+        "max": 0.47632460100066965,
+        "p50": 0.4012252800002898,
+        "p95": 0.4094008100000792
+      },
+      "prediction_class_counts": {
+        "None": 100
+      },
+      "requests": 100,
+      "service_process": {
+        "cpu_cores_average_during_sample": 2.1441899191120894,
+        "resident_memory_bytes_end": 316239872.0,
+        "resident_memory_bytes_peak_sampled": 316239872.0,
+        "resident_memory_bytes_start": 316239872.0,
+        "sample_count": 9,
+        "sampling_errors": []
+      },
+      "successes": 100,
+      "throughput_requests_per_second": 9.979804003370006
+    }
+  ],
+  "schema_version": 1,
+  "service_image_ref": "vehicle-classifier-api:phase7",
+  "target": "http://127.0.0.1:18000",
+  "workload": {
+    "concurrency_levels": [
+      1,
+      2,
+      4
+    ],
+    "image_bytes": 2485,
+    "image_format": "PNG",
+    "method": "multipart POST /predict",
+    "requests_per_level": 100,
+    "warmup_requests": 3
+  }
+}

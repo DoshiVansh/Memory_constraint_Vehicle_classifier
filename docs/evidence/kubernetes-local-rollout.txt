@@ -1,0 +1,30 @@
+Observed UTC: 2026-10-26
+
+$ kubectl get deployment,service,pods -n vehicle-classifier-staging
+NAME                                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/vehicle-classifier-api          1/1     1            1           6h10m
+deployment.apps/vehicle-classifier-grafana      1/1     1            1           5h16m
+deployment.apps/vehicle-classifier-prometheus   1/1     1            1           5h16m
+
+NAME                             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/grafana                  ClusterIP   10.96.199.148   <none>        3000/TCP   5h16m
+service/prometheus               ClusterIP   10.96.196.226   <none>        9090/TCP   5h16m
+service/vehicle-classifier-api   ClusterIP   10.96.218.197   <none>        8000/TCP   6h10m
+
+NAME                                                 READY   STATUS    RESTARTS   AGE
+pod/vehicle-classifier-api-5f965dc8cd-8s9fx          1/1     Running   0          5m40s
+pod/vehicle-classifier-grafana-6df9c4df5f-xf6ck      1/1     Running   0          5h8m
+pod/vehicle-classifier-prometheus-79744c64c6-6vvsc   1/1     Running   0          5h16m
+
+$ kubectl rollout history deployment/vehicle-classifier-api -n vehicle-classifier-staging
+deployment.apps/vehicle-classifier-api 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+4         <none>
+6         <none>
+7         <none>
+
+
+Failure injection: set image to vehicle-classifier-api:phase8-intentionally-missing; rollout status timed out after 45 seconds as expected.
+Recovery: rollout undo succeeded; rollout status succeeded; scripts/k8s_smoke_test.py returned readiness=ready, predicted_index=4, class_name=None, champion SHA c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4.
