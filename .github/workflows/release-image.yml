@@ -52,7 +52,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ steps.image.outputs.name }}
-          flavor: latest=false
+          flavor: latest=auto
           tags: |
             type=ref,event=tag
             type=sha,format=long,prefix=sha-
