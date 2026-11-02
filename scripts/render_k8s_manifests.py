@@ -19,6 +19,8 @@ def render_manifests():
             content = f.read()
         for var in ENV_VARS:
             val = os.environ.get(var, "")
+            if var == "IMAGE_REF":
+                val = val.lower()
             content = content.replace("${" + var + "}", val).replace("$" + var, val)
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(content)

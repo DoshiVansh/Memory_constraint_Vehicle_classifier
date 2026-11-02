@@ -78,7 +78,7 @@ jobs:
             export MODEL_VERSION="${MODEL_VERSION:-1}"
             export RELEASE_GIT_SHA="${RELEASE_GIT_SHA:-${GITHUB_SHA:-manual}}"
             export MODEL_SHA256="${MODEL_SHA256:-unspecified}"
-            export IMAGE_REF="${IMAGE_REF}"
+            export IMAGE_REF="${IMAGE_REF,,}"
 
             python scripts/render_k8s_manifests.py
             kubectl apply -f k8s/namespace.yaml
