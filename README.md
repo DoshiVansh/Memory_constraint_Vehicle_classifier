@@ -1,21 +1,182 @@
 # Memory-Constrained Vehicle Classifier
 
+[![Live Staging](https://img.shields.io/badge/AKS_Staging-Live_Online-success?style=flat&logo=kubernetes)](http://20.200.237.154:8000/docs)
+[![Grafana](https://img.shields.io/badge/Grafana-16_Panels-orange?style=flat&logo=grafana)](http://20.249.161.211:3000)
+[![Model Size](https://img.shields.io/badge/Model_Size-2.67_MB_(<5MB_Cap)-blue)](reports/release_metadata.json)
+[![Accuracy](https://img.shields.io/badge/Accuracy-92.40%25-brightgreen)](reports/evaluation.json)
+[![Inference Latency](https://img.shields.io/badge/p95_CPU_Latency-18.2ms_(<25ms_SLA)-purple)](reports/evaluation.json)
+
 Project handoff docs: [architecture](docs/architecture.md),
 [data card](docs/data_card.md), [model card](docs/model_card.md),
 [known limitations](docs/known_limitations.md),
 [operator runbook](docs/runbook.md), [demo script and FAQ](docs/demo_script.md),
+[MLOps Lifecycle Masterclass](docs/MLOPS_LIFECYCLE_MASTERCLASS.md),
 and [phase/evidence status](docs/phase_status.md).
 
-Five-class image classifier using a ShuffleNet V2 x1.0 student distilled from an EfficientNet-B2 teacher. The legacy interface remains available:
+Five-class image classifier (`0 Bus`, `1 Truck`, `2 Car`, `3 Bike`, `4 None`) using a **ShuffleNet V2 x1.0 student model (2.67 MB)** distilled from an **EfficientNet-B2 teacher**. Engineered strictly for resource-constrained edge CPU environments: serialized weights under 5 MB, p95 turnaround under 25 ms, zero runtime external downloads, full OpenTelemetry distributed tracing, and automated GitOps continuous deployment to Azure Kubernetes Service (AKS).
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Data_Model_Lineage["1. Data & Model Lineage"]
+        RawData["Dataset (2,500 Images)"] --> DVC["DVC Versioning (DagsHub S3 Remote)"]
+        DVC --> Teacher["Teacher Model (EfficientNet-B2)"]
+        Teacher --> KD["Knowledge Distillation (KL Div + CE)"]
+        KD --> Student["Student Model (ShuffleNet V2 x1.0 - 2.67MB)"]
+        Student --> MLflow["MLflow Registry (Model: VehicleClassifier@champion)"]
+    end
+
+    subgraph CI_CD_Automation["2. Automation & Continuous Delivery"]
+        GitPR["Git Pull Request"] --> CI["ci.yml: Lint, Test, Quality Gate"]
+        GitTag["Git Tag Push (v*)"] --> ReleaseWorkflow["release-image.yml: Multi-arch Docker Build & GHCR Push"]
+        ReleaseWorkflow --> RelManifest["reports/release_metadata.json + GitHub Release"]
+        ReleaseWorkflow --> CDDispatch["CD Dispatch & deploy.yml Verification"]
+    end
+
+    subgraph Cloud_Deployment["3. Azure Kubernetes Service (AKS) Staging"]
+        GHCR["GitHub Container Registry (ghcr.io)"] --> K8sDeploy["AKS Deployment (vehicle-classifier-api)"]
+        K8sDeploy --> HPA["Horizontal Pod Autoscaler (2 - 6 Replicas)"]
+        K8sDeploy --> Ingress["Service LoadBalancer (Port 8000)"]
+    end
+
+    subgraph Observability_Monitoring["4. Production Observability Stack"]
+        Ingress --> FastAPISvc["FastAPI Inference Engine"]
+        FastAPISvc --> OTel["OpenTelemetry Traces & Spans"]
+        FastAPISvc --> PromMetrics["Prometheus Scrape (/metrics/)"]
+        PromMetrics --> PromServer["Prometheus Server + AlertManager PVC"]
+        PromServer --> Grafana["Grafana MLOps Dashboard (Port 3000)"]
+    end
+```
+
+---
+
+## 🚀 CI/CD & MLOps Pipelines
+
+The repository features automated, production-grade GitHub Actions workflows ensuring strict quality gates, immutable container attestations, and automated cloud rollouts:
+
+| Pipeline Name | Workflow File | Trigger Event | Primary Purpose & Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **PR Quality Gate** | `.github/workflows/ci.yml` | `pull_request` to `main`, `workflow_call` | Fast, deterministic CPU verification: enforces `ruff` linting, Python module compilation, pytest unit tests, and model quality gate thresholds without retraining. |
+| **Release & AKS Deploy** | `.github/workflows/release-image.yml` | `push: tags: ["v*"]` | Reruns quality gate, validates champion checkpoint hash/sidecar, builds multi-arch Docker image, publishes immutable tags (`v*` and `:latest`) to GHCR, publishes GitHub Release with `release_metadata.json`, deploys to Azure AKS, and triggers CD verification. |
+| **Continuous Deployment** | `.github/workflows/deploy.yml` | `repository_dispatch: [model-released]`, `workflow_run`, `workflow_dispatch` | Verifies release metadata lineage, validates Kubernetes manifests against live cluster, performs zero-downtime rolling update on AKS, and runs container health & contract smoke tests. |
+| **GPU Distillation Train** | `.github/workflows/train-gpu.yml` | `workflow_dispatch` (Manual) | Runs on self-hosted GPU runner: pulls versioned DVC data, executes teacher training, student distillation, and target/OOD evaluation, pushes DVC lock, and records metrics in MLflow. |
+| **DVC Data Lineage** | `dvc.yaml` | `dvc repro` (CLI) | Tracks pipeline stages (`validate_data`, `train_teacher`, `train_student`, `evaluate_target`, `evaluate_ood`), generating deterministic data hashes and metric locks. |
+
+### How Pipelines Cascade on Tag Release
+When a release tag is pushed (`git tag v1.0.10 && git push origin v1.0.10`):
+1. **`release-image.yml`** starts immediately. It verifies code quality, builds the Docker image with SHA-256 digest attestation, publishes both the versioned tag and `:latest` to GHCR, creates the GitHub release, and performs the live rollout to AKS.
+2. At the completion of container publishing, `release-image.yml` emits an authenticated `repository_dispatch` event (`model-released`), triggering **`deploy.yml`**.
+3. Upon full workflow completion, the native `workflow_run` hook also triggers **`deploy.yml`** for staging health verification and contract smoke testing.
+
+---
+
+## 🎯 How to Run Inference (4 Ways)
+
+The model can be invoked through four distinct methods depending on your environment:
+
+### Mode 1: Python Code / SDK (In-Process)
+Use the high-level Python interface directly in your code or scripts:
 
 ```python
 from vehicle_classifier import VehicleClassifier
 
+# Instantiate model (loads student_model.pth with integrity check)
 classifier = VehicleClassifier("student_model.pth")
-class_index = classifier.predict("vehicle.jpg")  # int in [0, 4]
+
+# Run prediction on any image file (JPEG, PNG, WEBP)
+class_index = classifier.predict("tests/fixtures/sample_car.jpg")
+print(f"Predicted class index: {class_index}") # e.g. 2 (Car)
+
+# Class index lookup:
+CLASS_MAP = {0: "Bus", 1: "Truck", 2: "Car", 3: "Bike", 4: "None"}
+print(f"Class Name: {CLASS_MAP[class_index]}")
 ```
 
-Class order is `0 Bus`, `1 Truck`, `2 Car`, `3 Bike`, `4 None`. Inference runs on CPU, uses RGB 224x224 images with ImageNet normalization, and constructs the architecture without downloading pretrained weights.
+Or load via MLflow Model Registry alias:
+```python
+import mlflow
+import pandas as pd
+
+model = mlflow.pyfunc.load_model("models:/VehicleClassifier@champion")
+prediction = model.predict(pd.DataFrame({"image_path": ["tests/fixtures/sample_car.jpg"]}))
+print(prediction)
+```
+
+---
+
+### Mode 2: Local HTTP REST API (FastAPI)
+Run the production FastAPI service locally:
+
+```bash
+# 1. Start the API server on port 8000
+uvicorn vehicle_classifier_core.api:app --host 0.0.0.0 --port 8000
+
+# 2. Check health probes
+curl -s http://127.0.0.1:8000/health/live
+curl -s http://127.0.0.1:8000/health/ready
+
+# 3. Perform prediction via curl (Multipart File Upload)
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Accept: application/json" \
+  -F "file=@tests/fixtures/sample_car.jpg"
+```
+
+**Expected JSON Response:**
+```json
+{
+  "predicted_index": 2,
+  "class_name": "Car",
+  "model_sha256": "c80eaf7a45e87e604b2e41af992094425834e46d747315a6fb66a65f7c18e1d4"
+}
+```
+
+Interactive OpenAPI Swagger UI is available at **`http://127.0.0.1:8000/docs`**.
+
+---
+
+### Mode 3: Standalone Docker Container
+Pull and run the official published container image from GitHub Container Registry (GHCR):
+
+```bash
+# 1. Run container from GHCR
+docker run -d --name vehicle-classifier -p 8000:8000 \
+  ghcr.io/doshivansh/memory_constraint_vehicle_classifier:latest
+
+# 2. Test prediction against the container
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -F "file=@tests/fixtures/sample_car.jpg"
+
+# 3. Verify zero-network runtime requirement (offline capability)
+docker run --rm --network none \
+  ghcr.io/doshivansh/memory_constraint_vehicle_classifier:latest \
+  python /app/scripts/smoke_test_api.py
+```
+
+---
+
+### Mode 4: Live Cloud AKS Cluster (Production Staging)
+The application is deployed on Microsoft Azure Kubernetes Service (AKS) with an active public LoadBalancer:
+
+* **Public API Endpoint**: `http://20.200.237.154:8000`
+* **Swagger API Documentation**: [`http://20.200.237.154:8000/docs`](http://20.200.237.154:8000/docs)
+* **Prometheus Live Metrics**: [`http://20.200.237.154:8000/metrics`](http://20.200.237.154:8000/metrics)
+* **Live Grafana MLOps Dashboard**: [`http://20.249.161.211:3000`](http://20.249.161.211:3000)
+
+**Run Live Inference Against the Cloud Cluster:**
+```bash
+# Health Check
+curl -s http://20.200.237.154:8000/health/ready
+
+# Live Prediction
+curl -X POST "http://20.200.237.154:8000/predict" \
+  -H "Accept: application/json" \
+  -F "file=@tests/fixtures/sample_car.jpg"
+```
+
+---
 
 ## Supported CPU environment
 
